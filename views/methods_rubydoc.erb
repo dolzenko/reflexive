@@ -1,0 +1,16 @@
+<h2>
+  <%= @klass.name %>#<%= @method_name %>
+</h2>
+
+<div id="rubydoc">
+  Loading ruby
+</div>
+
+<script type="text/javascript">
+  //<![CDATA[
+  $(function() {
+    var url = "http://ruby-doc.org/ruby-1.9/classes/Float.html";
+    $("#rubydoc").html("Loading " + url + " ...").load("/rubydoc_xss/" + url);
+  });
+  //]]>
+</script>

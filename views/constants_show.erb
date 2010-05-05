@@ -1,0 +1,26 @@
+<%#= r link_to(Rack::Utils.escape_html("<"), "#") %>
+
+<h1>Introspection</h1>
+
+<h2>
+  <%= @klass.name %>
+  <% if @klass.respond_to?(:superclass) && @klass.superclass != Object %>
+    &lt; <%= @klass.superclass.name %>
+  <% end %>
+</h2>
+
+<%= @klass.ancestors.
+        select { |ancestor| ancestor.class == Class }.
+        map { |ancestor| ancestor.name }.
+        join(" &lt; ") %>
+
+<div>
+  <% Looksee.lookup_path(@klass).entries.each do |lookup_path| %>
+    <h3>
+      <%= link_to(lookup_path.module_name.gsub(/\[|\]/, ""),
+                  constant_path(lookup_path.module_name.gsub(/\[|\]/, ""))) %>
+    </h3>
+    <%= content_tag(:pre,
+                    methods_table(@klass, lookup_path)) %>
+  <% end %>
+</div>

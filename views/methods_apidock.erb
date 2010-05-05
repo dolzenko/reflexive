@@ -1,0 +1,17 @@
+<h2>
+  <%= @klass.name %>#<%= @method_name %>
+</h2>
+<%= content_tag :iframe,
+                "",
+                :src => apidock_path(@klass.name, @method_name),
+                :frameborder => 0,
+                :style => "width: 960px; height: 100%; position: absolute",
+                :id => "apidock" %>
+
+<script type="text/javascript">
+  //<![CDATA[
+  $(function() {
+    
+  });
+  //]]>
+</script>

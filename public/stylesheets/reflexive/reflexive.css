@@ -1,0 +1,33 @@
+#debug-dashboard h2 span
+{
+  border-bottom: 1px dotted gray;
+  cursor: pointer;
+}
+
+#debug-dashboard .opener .content
+{
+  display: none;
+}
+
+pre
+{
+  font-family: Consolas, Monaco, Courier, monospace;
+  font-size: 14pt;
+}
+
+pre a
+{
+  text-decoration: none;
+  color: black;
+}
+pre a:hover
+{
+  background-color: aquamarine;
+}
+
+a.path
+{
+  font-family: Consolas, Monaco, Courier, monospace;
+  font-size: 12pt;
+  text-decoration: none;
+}

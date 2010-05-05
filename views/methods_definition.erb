@@ -1,0 +1,37 @@
+<h2>
+  <%= @klass.name %>#<%= @method_name %>
+</h2>
+
+<% full_path = "#{ @path }:#{ @line }" %>
+<% shortened_path = shorten_file_path(@path) %>
+
+<div>
+  <%= link_to "#{ shortened_path }:#{ @line }" ,
+             "#",
+             :title => full_path,
+             :class => "path" %>
+</div>
+
+
+<%= @source %>
+
+<script type="text/javascript">
+  //<![CDATA[
+  $(function() {
+    $(".highlighted").attr("id", "highlighted").
+            parents(".no").addClass("highlighted");
+    window.location.hash = "#highlighted";
+  });
+  //]]>
+</script>
+
+<script type="text/javascript">
+  //<![CDATA[
+  $(function() {
+    $(".path").click(function(event) {
+      event.preventDefault();
+      $(this).html($(this).attr("title"));
+    });
+  });
+  //]]>
+</script>
