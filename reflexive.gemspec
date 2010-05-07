@@ -11,4 +11,5 @@ Gem::Specification.new do |s|
   s.add_dependency("sinatra_more")
   s.add_dependency("coderay")
   s.add_dependency("looksee")
+  s.add_dependency("andand")
 end

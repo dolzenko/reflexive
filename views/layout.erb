@@ -10,6 +10,10 @@
 </head>
 <body>
 
+<div class="dashboard-link">
+  <%= link_to("Reflexive Dashboard", dashboard_path) unless request.path == dashboard_path %>
+</div>
+
 <%= yield %>
 
 </body>

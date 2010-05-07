@@ -1,0 +1,27 @@
+<% shortened_path = shorten_file_path(@path) %>
+
+<div>
+  <%= link_to "#{ shortened_path }" ,
+             "#",
+             :title => @path,
+             :class => "path" %>
+  &nbsp;
+  <%= link_to "..",
+             up_path(@path),
+             :title => up_path(@path),
+             :class => :code %>
+</div>
+
+
+<%= @source %>
+
+<script type="text/javascript">
+  //<![CDATA[
+  $(function() {
+    $(".path").click(function(event) {
+      event.preventDefault();
+      $(this).html($(this).attr("title"));
+    });
+  });
+  //]]>
+</script>

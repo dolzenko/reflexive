@@ -52,7 +52,7 @@ describe "Integration with" do
                          <<-RUBY)
                           Rails::Initializer.run do |config|
                             config.gem "reflexive"
-                            insert_after("Rack::Lock", "Reflexive::Application")
+                            config.middleware.insert_after("Rack::Lock", "Reflexive::Application")
           RUBY
         end
 

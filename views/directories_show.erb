@@ -1,0 +1,16 @@
+<% shortened_path = shorten_file_path(@path) %>
+
+<div>
+  <%= link_to "#{ shortened_path }" ,
+             "#",
+             :title => @path,
+             :class => "path" %>
+</div>
+
+
+<% @listing = Dir.entries(@path).sort.
+                map { |e| e + (File.stat(File.join(@path, e)).directory? ? "/" : "") }.
+                sort_by { |e| e[-1] == ?/ ? -1 : 1 }.
+                map { |e| link_to_file(File.join(@path, e), :file_name_only => true) }.
+                join("\n") %>
+<%= content_tag(:pre, @listing) %>

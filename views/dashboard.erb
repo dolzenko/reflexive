@@ -1,0 +1,22 @@
+<h1>
+  Reflexive
+</h1>
+
+<% if defined?(ActiveRecord::Base) %>
+  Models
+  <%= content_tag(:pre,
+                  constants_table(ActiveRecord::Base,
+                                  Reflexive.descendants(ActiveRecord::Base))) %>
+<% end %>
+
+<% if defined?(ApplicationController) %>
+  Controllers
+  <%= content_tag(:pre,
+                  constants_table(ApplicationController,
+                                  Reflexive.descendants(ApplicationController))) %>
+<% end %>
+
+$LOAD_PATH
+<% $LOAD_PATH.sort.each do |path| %>
+  <%= link_to_file(path) %><br/>
+<% end %>

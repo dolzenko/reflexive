@@ -1,26 +1,90 @@
-<%#= r link_to(Rack::Utils.escape_html("<"), "#") %>
-
-<h1>Introspection</h1>
-
 <h2>
   <%= @klass.name %>
-  <% if @klass.respond_to?(:superclass) && @klass.superclass != Object %>
+  <% if @klass.respond_to?(:superclass) &&
+          @klass.superclass != Object &&
+          @klass.superclass != nil %>
     &lt; <%= @klass.superclass.name %>
   <% end %>
 </h2>
 
 <%= @klass.ancestors.
         select { |ancestor| ancestor.class == Class }.
-        map { |ancestor| ancestor.name }.
+        map { |ancestor| link_to(ancestor.name, constant_path(ancestor.name)) }.
         join(" &lt; ") %>
 
+<% unless @methods.files.empty? %>
+  <div>
+    <h4>Defined In Files</h4>
+    <% @methods.files.sort.each do |path| %>
+      <%= link_to_file(path) %><br/>
+    <% end %>
+  </div>
+<% end %>
+
+<% unless @methods.constants.empty? %>
+  <div>
+    <h4>Nested Class/Modules</h4>
+    <%= content_tag(:pre, constants_table(@klass, @methods.constants)) %>
+  </div>
+<% end %>
+
+<% unless @methods.descendants.empty? %>
+  <div>
+    <h4>Descendants</h4>
+    <%= content_tag(:pre, constants_table(@klass, @methods.descendants)) %>
+  </div>
+<% end %>
+
+<h4>
+  Ancestor Chain
+</h4>
+
 <div>
-  <% Looksee.lookup_path(@klass).entries.each do |lookup_path| %>
+  Singleton classes are included. The chain is flattened, Classes/Modules
+  which don't contribute any methods are not shown.
+  <div>Legend: <br/>
+    <dl>
+      <dt>[M]</dt>
+      <dd>- included Module;</dd>
+      <dt>[C]</dt>
+      <dd>- inherited Class; </dd>
+      <dt>S[M]</dt>
+      <dd>- Module included in singleton class; </dd>
+    </dl>
+  </div>
+</div>
+
+<div>
+  <% @methods.all.each do |ancestor_with_level_methods| %>
+    <% ancestor, level_methods =
+            ancestor_with_level_methods.keys[0], ancestor_with_level_methods.values[0] %>
     <h3>
-      <%= link_to(lookup_path.module_name.gsub(/\[|\]/, ""),
-                  constant_path(lookup_path.module_name.gsub(/\[|\]/, ""))) %>
+      <% ancestor_type, ancestor_constant = ancestor.split %>
+      <%= link_to(ancestor,
+                  constant_path(ancestor_constant)) %>
     </h3>
-    <%= content_tag(:pre,
-                    methods_table(@klass, lookup_path)) %>
+
+    <% if methods = level_methods[:class] %>
+      <div class="class-methods">
+        <h4>Class Methods</h4>
+        <% methods.each do |visibility, methods| %>
+          <h5><%= visibility %></h5>
+          <% method_method = ancestor_type == "S[M]" ? :instance : :class %>
+          <%= content_tag(:pre,
+                          new_methods_table(ancestor_constant, method_method, methods)) %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if methods = level_methods[:instance] %>
+      <div class="class-methods">
+        <h4>Instance Methods</h4>
+        <% methods.each do |visibility, methods| %>
+          <h5><%= visibility %></h5>
+          <%= content_tag(:pre,
+                          new_methods_table(ancestor_constant, :instance, methods)) %>
+        <% end %>
+      </div>
+    <% end %>
   <% end %>
 </div>
