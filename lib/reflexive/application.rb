@@ -1,3 +1,13 @@
+begin
+  # Require the preresolved locked set of gems.
+  require ::File.expand_path('../.bundle/environment', __FILE__)
+rescue LoadError
+  # Fallback on doing the resolve at runtime.
+  require "rubygems"
+  require "bundler"
+  Bundler.setup
+end
+
 require "sinatra/base"
 require "sinatra/reloader" if ENV["SINATRA_RELOADER"]
 require "sinatra_more/markup_plugin"
@@ -38,8 +48,9 @@ module Reflexive
       end
     end
 
-#    set :public, self.root + "public"
-#    set :views, self.root + "views"
+    set :app_file, __FILE__    
+    set :public, self.root + "public"
+    set :views, self.root + "views"
 
     get "/reflexive/dashboard" do
       erb :dashboard
