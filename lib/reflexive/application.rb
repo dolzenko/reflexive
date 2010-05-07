@@ -38,8 +38,8 @@ module Reflexive
       end
     end
 
-    set :public, self.root + "public"
-    set :views, self.root + "views"
+#    set :public, self.root + "public"
+#    set :views, self.root + "views"
 
     get "/reflexive/dashboard" do
       erb :dashboard
