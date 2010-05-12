@@ -5,7 +5,7 @@
 <% full_path = "#{ @path }:#{ @line }" %>
 <% shortened_path = shorten_file_path(@path) %>
 
-<div>
+<div style="margin-bottom: 10px;">
   <%= link_to "#{ shortened_path }:#{ @line }" ,
              "#",
              :title => full_path,

@@ -11,6 +11,11 @@ module RoutingHelpers
     File.join("/reflexive/files", path)
   end
 
+  def constant_lookup_path(name, scope)
+    "/reflexive/constant_lookup" <<
+      "?name=#{ CGI.escape(name) }&scope=#{ CGI.escape(scope.inspect)}"
+  end
+
   def constant_path(constant)
     "/reflexive/constants/#{ constant }"
   end

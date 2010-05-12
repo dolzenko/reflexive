@@ -1,13 +1,3 @@
-begin
-  # Require the preresolved locked set of gems.
-  require ::File.expand_path('../.bundle/environment', __FILE__)
-rescue LoadError
-  # Fallback on doing the resolve at runtime.
-  require "rubygems"
-  require "bundler"
-  Bundler.setup
-end
-
 require "sinatra/base"
 require "sinatra/reloader" if ENV["SINATRA_RELOADER"]
 require "sinatra_more/markup_plugin"
@@ -27,7 +17,16 @@ require "reflexive/constantize"
 require "reflexive/descendants"
 require "reflexive/methods"
 
-require "rails/all" if ENV["SINATRA_RELOADER"]
+if ENV["SINATRA_RELOADER"]
+  require "rails/all"
+  require "arel"
+
+  module ::Kernel
+    def r(*args)
+      raise((args.size == 1 ? args[0] : args).inspect)
+    end
+  end
+end
 
 module Reflexive
   class Application < Sinatra::Base
@@ -48,45 +47,60 @@ module Reflexive
       end
     end
 
-    set :app_file, __FILE__    
     set :public, self.root + "public"
     set :views, self.root + "views"
 
-    get "/reflexive/dashboard" do
+    def get(path, &block)
+      super("/reflexive/#{ path }", &block)
+    end
+
+    get "dashboard" do
       erb :dashboard
     end
 
-    get "/reflexive/files/*" do |path|
+    get "constant_lookup" do
+      name = params[:name]
+      scope = eval(params[:scope])
+      if scope && name !~ /^::/
+        begin
+          name_with_scope = "#{ scope.join("::") }::#{ name }"
+          klass = Reflexive.constantize(name_with_scope)
+          redirect(constant_path(klass.name))
+        rescue NameError, ArgumentError
+          # For defined top-level module, when looked up from another class:
+          # ArgumentError: Object is not missing constant Taggable!
+          #        from /usr/local/rvm/gems/ruby-1.9.2-head@selfport/gems/activesupport-2.3.5/lib/active_support/dependencies.rb:417:in `load_missing_constant'
+          retry if scope.pop
+        end
+        "Failed to lookup constant: #{ params.inspect }"
+      else
+        redirect(constant_path(name))
+      end
+    end
+
+    get "files/*" do |path|
       @path = "/" + path
       if File.stat(@path).directory?
         erb :directories_show
       else
-        @source = CodeRay.highlight_file(@path,
-                                         :line_numbers => :inline,
-                                         :css => :class)
+        @source = highlight_file(@path)
         erb :files_show
       end
     end
 
-    get "/reflexive/constants/:klass/class_methods/:method/definition" do
+    get "constants/:klass/class_methods/:method/definition" do
       find_klass
       @method_name = params[:method]
       @path, @line = @klass.method(@method_name).source_location
-      @source = CodeRay.highlight_file(@path,
-                                       :line_numbers => :inline,
-                                       :css => :class,
-                                       :highlight_lines => [@line])
+      @source = highlight_file(@path, :highlight_lines => [@line])
       erb :methods_definition
     end
 
-    get "/reflexive/constants/:klass/instance_methods/:method/definition" do
+    get "constants/:klass/instance_methods/:method/definition" do
       find_klass
       @method_name = params[:method]
       @path, @line = @klass.instance_method(@method_name).source_location
-      @source = CodeRay.highlight_file(@path,
-                                       :line_numbers => :inline,
-                                       :css => :class,
-                                       :highlight_lines => [@line])
+      @source = highlight_file(@path, :highlight_lines => [@line])
       erb :methods_definition
     end
 
@@ -96,7 +110,7 @@ module Reflexive
       erb :methods_apidock
     end
 
-    get "/reflexive/constants/:klass/class_methods/:method" do
+    get "constants/:klass/class_methods/:method" do
       find_klass
       if @klass.method(params[:method]).source_location
         redirect(class_method_definition_path(params[:klass], params[:method]) +
@@ -106,7 +120,7 @@ module Reflexive
       end
     end
 
-    get "/reflexive/constants/:klass/instance_methods/:method" do
+    get "constants/:klass/instance_methods/:method" do
       find_klass
       if @klass.instance_method(params[:method]).source_location
         redirect(instance_method_definition_path(params[:klass], params[:method]) +
@@ -116,7 +130,8 @@ module Reflexive
       end
     end
 
-    get "/reflexive/constants/:klass" do
+    get "constants/:klass" do
+      # r Class.constants
       find_klass
       @methods = Reflexive::Methods.new(@klass)
       #      @methods = Faster::OpenStruct.new(:klass => Faster::OpenStruct.new,
@@ -138,10 +153,6 @@ module Reflexive
     protected
 
     error(404) { @app.call(env) if @app }
-
-    def r(*args)
-      raise((args.size == 1 ? args[0] : args).inspect)
-    end
 
     def find_klass
       @klass = Reflexive.constantize(params[:klass]) if params[:klass]

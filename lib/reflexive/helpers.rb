@@ -1,7 +1,33 @@
+require "reflexive/routing_helpers"
+require "reflexive/coderay_ruby_scanner"
+require "reflexive/coderay_html_encoder"
+
 module Reflexive
   module Helpers
-    require "reflexive/routing_helpers"
     include RoutingHelpers
+
+    CODERAY_ENCODER_OPTIONS = {
+      :wrap => :div,
+      :css => :class,
+      :line_numbers => :inline
+    }.freeze
+
+    def highlight_file(path, options = {})
+      options = CODERAY_ENCODER_OPTIONS.merge(options)
+      if path =~ /\.rb$/
+        src = IO.read(path)
+        tokens = CodeRayRubyScanner.new(src).tokenize
+        encoder = CodeRayHtmlEncoder.new(options)
+        encoder.encode_tokens(tokens)
+      elsif path =~ /\.(markdown|md)$/
+        require "rdiscount"
+        src = IO.read(path)
+        markdown = RDiscount.new(src)
+        markdown.to_html
+      else
+        CodeRay.scan_file(path).html(options).div
+      end
+    end    
     
     def constant_name(klass)
       klass.name || klass.to_s
@@ -48,7 +74,7 @@ module Reflexive
     end
 
     def new_methods_table(constant, level, methods)
-      linked_methods = methods.map do |name|
+      linked_methods = methods.sort.map do |name|
         new_link_to_method(constant, level, name)
       end
       Reflexive::Columnizer.columnize(linked_methods, 120)

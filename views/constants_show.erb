@@ -5,12 +5,18 @@
           @klass.superclass != nil %>
     &lt; <%= @klass.superclass.name %>
   <% end %>
+
+  <% if (ancestors = @klass.ancestors[2..-1]) %>
+    <span class="inheritance-chain">
+      &lt;
+      <%= ancestors.
+            select { |ancestor| ancestor.class == Class }.
+            map { |ancestor| link_to(ancestor.name, constant_path(ancestor.name)) }.
+            join(" &lt; ") %>
+    </span>
+  <% end %>
 </h2>
 
-<%= @klass.ancestors.
-        select { |ancestor| ancestor.class == Class }.
-        map { |ancestor| link_to(ancestor.name, constant_path(ancestor.name)) }.
-        join(" &lt; ") %>
 
 <% unless @methods.files.empty? %>
   <div>
