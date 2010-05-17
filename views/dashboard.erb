@@ -5,23 +5,23 @@
   <% if defined?(ActiveRecord::Base) || defined?(ApplicationController) %>
     <div class="row">
       <div class="column">
-        <% if defined?(ActiveRecord::Base) %>
+        <% if defined?(::ActiveRecord::Base) %>
           <h2>Models</h2>
 
           <div style="clear: both;"></div>
           <div class="content">
             <%= content_tag(:pre,
-                            constants_list(ActiveRecord::Base,
-                                            Reflexive.descendants(ActiveRecord::Base))) %>
+                            constants_list(::ActiveRecord::Base,
+                                            Reflexive.descendants(::ActiveRecord::Base))) %>
           </div>
         <% end %>
       </div>
       <div class="column">
-        <% if defined?(ApplicationController) %>
+        <% if defined?(::ApplicationController) %>
           <h2>Controllers</h2>
           <%= content_tag(:pre,
-                          constants_list(ApplicationController,
-                                          Reflexive.descendants(ApplicationController))) %>
+                          constants_list(::ApplicationController,
+                                          Reflexive.descendants(::ApplicationController))) %>
         <% end %>
       </div>
     </div>
