@@ -17,7 +17,7 @@ module Reflexive
 
     def constants
       @constants ||= @klass_or_module.constants(true).map do |c|
-        @klass_or_module.const_get(c) # rescue nil
+        @klass_or_module.const_get(c) rescue nil
       end.compact.select do |c|
         c.instance_of?(Class) || c.instance_of?(Module)
       end # rescue r(@klass_or_module.constants)

@@ -2,4 +2,3 @@ tmp/
 .idea/
 .bundle/
 vendor/
-bin/build_and_install_test_gem

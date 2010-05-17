@@ -49,11 +49,19 @@ module Reflexive
       in_backtick = false
       in_symbol = false
       in_embexpr_nesting = 0
-      scanner_events.each do |token_val, event|
-        if event == :meta_scope
-          @coderay_tokens << [token_val, event]
-          next
-        end
+      scanner_events.each do |scanner_event|
+        token_val, event, tags =
+                ReflexiveRipper.destruct_scanner_event(scanner_event)
+        
+        #        if event == :meta_scope
+        #          @coderay_tokens << [token_val, event]
+        #          next
+        #        end
+        #
+        #        if token_val == :method_call
+        #          @coderay_tokens << [token_val, event, tags]
+        #          next
+        #        end
 
         ripper_token = SCANNER_EVENT_TO_CODERAY_TOKEN[event.to_sym] || event.to_sym
         if in_backtick && event == :lparen
@@ -139,15 +147,19 @@ module Reflexive
           end
         else
           if @coderay_tokens.size > 0 && @coderay_tokens[-1][1] == ripper_token
-            @coderay_tokens[-1][0] << token_val
+            @coderay_tokens.last[0] << token_val # same consequent tokens get squeezed
           else
             @coderay_tokens << [token_val, ripper_token]
+            @coderay_tokens.last << tags if tags
           end
         end
       end
 
-
-      inject_constant_tags(squeeze_constants(@coderay_tokens))
+      tokens = @coderay_tokens
+      # tokens = squeeze_constants(tokens)
+      # tokens = inject_constant_tags(tokens)
+      tokens = inject_load_path_tags(tokens)
+      tokens
     end
 
     def squeeze_constants(coderay_tokens)
@@ -175,9 +187,38 @@ module Reflexive
       coderay_tokens.each do |token|
         if token[1] == :constant
           token << { :scope => scope }
+        elsif token[0] == :method_call &&
+                token[1] == :open
+          begin
+          token[2][:scope] = scope
+          rescue Exception
+            r(token)
+            end
+          
         elsif token[1] == :meta_scope
           scope = token[0]
           scope = nil if scope.empty?
+        end
+      end
+      coderay_tokens
+    end
+
+    def inject_load_path_tags(coderay_tokens)
+      state = nil
+      coderay_tokens.each do |token|
+        value, type = token
+        if state == nil && type == :ident && value =~ /\A(require|load)\z/
+          state = :ident
+        elsif state == :ident && [ :operator, :space ].include?(type)
+          # skip
+        elsif state == :ident && value == :open && type == :string
+          state = :open_string
+        elsif state == :open_string && type == :delimiter
+          # skip
+        elsif state == :open_string && type == :content
+          token << { :load_path => true }
+        else
+          state = nil
         end
       end
       coderay_tokens

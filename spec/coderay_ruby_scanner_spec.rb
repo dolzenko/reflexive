@@ -9,6 +9,7 @@ describe Reflexive::CodeRayRubyScanner do
   def reflexive_tokens_without_meta_and_tags(src)
     Reflexive::CodeRayRubyScanner.new(src).tokenize.
             reject { |t| t[1] == :meta_scope }.
+            reject { |t| t[0] == :method_call }.
             map { |t| t[2].is_a?(Hash) ? t[0..1] : t }
   end
 
@@ -24,7 +25,7 @@ describe Reflexive::CodeRayRubyScanner do
     end
   end
 
-  it "squeezes constants" do
+  pending "squeezes constants" do
     src = <<-RUBY
       class ConstRef < Const::PathRef
         RefenceConstInClassBody = ::TopConstRef
@@ -53,6 +54,13 @@ describe Reflexive::CodeRayRubyScanner do
     tokens.should include(["::TopConstRef", :constant, { :scope => ["Const::PathRef"] }])
     tokens.should include(["Const::Deeply::Nested::PathRef", :constant, { :scope => nil }])
   end
+
+  it "injects load_path tags" do
+    reflexive_tokens("require('f')").should include(["f", :content, { :load_path => true }])
+    reflexive_tokens("require 'f'").should include(["f", :content, { :load_path => true }])
+  end
+
+  it "injects instance method tags"
 
   ONE_LINERS = <<-RUBY.gsub(/^ */, "")
     %Q{str}

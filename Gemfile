@@ -6,8 +6,6 @@ gem "rack"
 gem "sinatra"
 gem "sinatra_more"
 gem "coderay"
-gem "looksee"
-gem "andand"
 gem "rdiscount"
 
 group :development do

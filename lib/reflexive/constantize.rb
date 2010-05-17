@@ -1,6 +1,30 @@
 module Reflexive
   module_function
 
+  def constant_lookup(name, scope)
+    if name =~ /^::/
+      begin
+        return Reflexive.constantize(name)
+      rescue NameError, ArgumentError
+        return nil
+      end
+    end
+
+    scope_parts = scope.split("::")
+    
+    begin
+      name_with_scope = "#{ scope_parts.join("::") }::#{ name }"
+      return Reflexive.constantize(name_with_scope)
+    rescue NameError, ArgumentError
+      # For defined top-level module, when looked up from another class:
+      # ArgumentError: Object is not missing constant TopLevelConst!
+      #        from .../activesupport-2.3.5/lib/active_support/dependencies.rb:417:in `load_missing_constant'
+      retry if scope_parts.pop
+    end
+    
+    nil
+  end
+
   # from C:\Users\work\Documents\ubuntu_shared\edge\vendor\rails\activesupport\lib\active_support\inflector\methods.rb
   # Ruby 1.9 introduces an inherit argument for Module#const_get and
   # #const_defined? and changes their default behavior.

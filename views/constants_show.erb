@@ -1,16 +1,14 @@
 <h2>
+  <%= @klass.class == Module ? "module" : "class" %>  
   <%= @klass.name %>
-  <% if @klass.respond_to?(:superclass) &&
-          @klass.superclass != Object &&
-          @klass.superclass != nil %>
-    &lt; <%= @klass.superclass.name %>
+  <% if @superclass %>
+    &lt; <%= @superclass.name %>
   <% end %>
 
-  <% if (ancestors = @klass.ancestors[2..-1]) %>
+  <% if @class_ancestors %>
     <span class="inheritance-chain">
       &lt;
-      <%= ancestors.
-            select { |ancestor| ancestor.class == Class }.
+      <%= @class_ancestors.
             map { |ancestor| link_to(ancestor.name, constant_path(ancestor.name)) }.
             join(" &lt; ") %>
     </span>
@@ -29,34 +27,36 @@
 
 <% unless @methods.constants.empty? %>
   <div>
-    <h4>Nested Class/Modules</h4>
+    <h4>Nested Classes/Modules</h4>
     <%= content_tag(:pre, constants_table(@klass, @methods.constants)) %>
   </div>
 <% end %>
 
 <% unless @methods.descendants.empty? %>
   <div>
-    <h4>Descendants</h4>
+    <h4><%= @klass.instance_of?(Module) ? "Included In" : "Descendants" %></h4>
     <%= content_tag(:pre, constants_table(@klass, @methods.descendants)) %>
   </div>
 <% end %>
 
-<h4>
-  Ancestor Chain
-</h4>
+<div class="opener">
+  <h4 class="trigger" title="Show Legend">
+    <span>Ancestor Chain</span>
+  </h4>
 
-<div>
-  Singleton classes are included. The chain is flattened, Classes/Modules
-  which don't contribute any methods are not shown.
-  <div>Legend: <br/>
-    <dl>
-      <dt>[M]</dt>
-      <dd>- included Module;</dd>
-      <dt>[C]</dt>
-      <dd>- inherited Class; </dd>
-      <dt>S[M]</dt>
-      <dd>- Module included in singleton class; </dd>
-    </dl>
+  <div class="content">
+    Singleton classes are included. The chain is flattened, Classes/Modules
+    which don't contribute any methods are not shown.
+    <div>Legend: <br/>
+      <dl>
+        <dt>[M]</dt>
+        <dd>- included Module;</dd>
+        <dt>[C]</dt>
+        <dd>- inherited Class; </dd>
+        <dt>S[M]</dt>
+        <dd>- Module included in singleton class; </dd>
+      </dl>
+    </div>
   </div>
 </div>
 
@@ -72,9 +72,9 @@
 
     <% if methods = level_methods[:class] %>
       <div class="class-methods">
-        <h4>Class Methods</h4>
+
         <% methods.each do |visibility, methods| %>
-          <h5><%= visibility %></h5>
+          <h5>Class <%= visibility.to_s.capitalize %></h5>
           <% method_method = ancestor_type == "S[M]" ? :instance : :class %>
           <%= content_tag(:pre,
                           new_methods_table(ancestor_constant, method_method, methods)) %>
@@ -84,9 +84,9 @@
 
     <% if methods = level_methods[:instance] %>
       <div class="class-methods">
-        <h4>Instance Methods</h4>
+
         <% methods.each do |visibility, methods| %>
-          <h5><%= visibility %></h5>
+          <h5>Instance <%= visibility.to_s.capitalize %></h5>
           <%= content_tag(:pre,
                           new_methods_table(ancestor_constant, :instance, methods)) %>
         <% end %>

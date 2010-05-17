@@ -3,8 +3,37 @@ require "reflexive/coderay_ruby_scanner"
 require "reflexive/coderay_html_encoder"
 
 module Reflexive
+  FILE_EXT = /\.\w+\z/
+  DL_EXT = /\.s?o\z/
+  def self.load_path_lookup(path)
+    path_with_rb_ext = path.sub(FILE_EXT, "") + ".rb"
+    feature = nil
+    $LOAD_PATH.detect do |load_path|
+      File.exists?(feature = File.join(load_path, path_with_rb_ext))
+    end
+    feature
+  end
+
+  def self.loaded_features_lookup(path)
+    path_without_ext = path.sub(FILE_EXT, "")
+
+    $LOADED_FEATURES.reverse.reject do |feature|
+      feature =~ DL_EXT
+    end.detect do |feature|
+      feature_without_ext = feature.sub(FILE_EXT, "")
+
+      feature_without_ext =~ /\/#{ Regexp.escape(path_without_ext) }\z/
+    end    
+  end
+
   module Helpers
     include RoutingHelpers
+
+    def filter_existing_constants(constants)
+      constants.
+              select { |c| Kernel.const_defined?(c) }.
+              map { |c| Kernel.const_get(c) }
+    end
 
     CODERAY_ENCODER_OPTIONS = {
       :wrap => :div,
@@ -46,10 +75,6 @@ module Reflexive
               :class => "path")
     end
 
-    def some_helper_meth
-      r 123
-    end
-    
     def shorten_file_path(path)
       require "rbconfig"
       path.
@@ -80,16 +105,22 @@ module Reflexive
       Reflexive::Columnizer.columnize(linked_methods, 120)
     end
 
-    def constants_table(base_constant, constants)
-      linked_constants = constants.map do |constant|
+    def constants_table(base_constant, constants, width = 120)
+      Reflexive::Columnizer.columnize(constants_links(base_constant, constants), width)
+    end
+
+    def constants_list(base_constant, constants)
+      constants_links(base_constant, constants).join("<br/>")
+    end
+
+    def constants_links(base_constant, constants)
+      constants.map do |constant|
         full_name = constant_name(constant)
         [ full_name, constant ]
       end.sort_by(&:first).map do |full_name, constant|
         link_text = full_name.gsub("#{ base_constant }::", "")
-        link_text = truncate(link_text)
         link_to(link_text, constant_path(constant), :title => full_name)
-      end
-      Reflexive::Columnizer.columnize(linked_constants, 120)
+      end      
     end
 
     def instance_methods_table(lookup_path)
@@ -115,14 +146,11 @@ module Reflexive
         [a, a.methods(false).sort] unless a.methods(false).empty?
       end.compact
 
-      # r ancestors_with_methods.map { |e| e[1].size }.sum
-      
       ancestors_with_methods.each do |ancestor, ancestor_methods|
         linked_methods += ancestor_methods.map do |name|
           link_to_method(ancestor.name, name)
         end
       end
-      # r linked_methods.size
       
       Reflexive::Columnizer.columnize(linked_methods, 120)
     end

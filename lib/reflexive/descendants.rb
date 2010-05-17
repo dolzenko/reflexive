@@ -22,13 +22,18 @@ module Reflexive
 
   def descendants(klass, generations=nil)
     subclass = []
+    
     ObjectSpace.each_object(Class) do |c|
-      ancestors = c.ancestors[0..(generations || -1)]
-      if ancestors.include?(klass) and klass != c
-        subclass << c
-      end
+      next if c == klass
+      
+      ancestors = c.ancestors[0 .. (generations || -1)]
+      subclass << c if ancestors.include?(klass)
+
+      ancestors = c.singleton_class.ancestors[0 .. (generations || -1)]
+      subclass << c if ancestors.include?(klass)
     end
-    return subclass
+    
+    subclass
   end
 end
 

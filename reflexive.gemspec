@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.homepage    = "http://github.com/dolzenko/reflexive"
   s.summary     = "Reflexive"
 
-  s.files       = Dir.glob("{lib,public,views}/**/*") + %w(reflexive.gemspec)
+  s.files       = Dir.glob("{lib,public,views,spec}/**/*") + %w(reflexive.gemspec)
 
   s.required_ruby_version = '>= 1.9.1'
 
@@ -15,8 +15,6 @@ Gem::Specification.new do |s|
   s.add_dependency "sinatra"
   s.add_dependency "sinatra_more"
   s.add_dependency "coderay"
-  s.add_dependency "looksee"
-  s.add_dependency "andand"
   s.add_dependency "rdiscount"
 
   s.add_development_dependency "rails", "3.0.0.beta3"

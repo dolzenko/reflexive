@@ -3,12 +3,8 @@ require "sinatra/reloader" if ENV["SINATRA_RELOADER"]
 require "sinatra_more/markup_plugin"
 
 require "coderay"
-require "andand"
 require "ostruct"
 require "open-uri"
-
-require "looksee"
-Looksee.styles.each { |k, _| Looksee.styles[k] = "%s" }
 
 require "reflexive/faster_open_struct"
 require "reflexive/helpers"
@@ -50,35 +46,28 @@ module Reflexive
     set :public, self.root + "public"
     set :views, self.root + "views"
 
-    def get(path, &block)
-      super("/reflexive/#{ path }", &block)
+    def self.action(path, &block)
+      get("/reflexive/#{ path }", &block)
     end
 
-    get "dashboard" do
+    def e(message)
+      @message = message
+      erb :error
+    end
+
+    action "dashboard" do
       erb :dashboard
     end
 
-    get "constant_lookup" do
-      name = params[:name]
-      scope = eval(params[:scope])
-      if scope && name !~ /^::/
-        begin
-          name_with_scope = "#{ scope.join("::") }::#{ name }"
-          klass = Reflexive.constantize(name_with_scope)
-          redirect(constant_path(klass.name))
-        rescue NameError, ArgumentError
-          # For defined top-level module, when looked up from another class:
-          # ArgumentError: Object is not missing constant Taggable!
-          #        from /usr/local/rvm/gems/ruby-1.9.2-head@selfport/gems/activesupport-2.3.5/lib/active_support/dependencies.rb:417:in `load_missing_constant'
-          retry if scope.pop
-        end
-        "Failed to lookup constant: #{ params.inspect }"
+    action "constant_lookup" do
+      if klass = Reflexive.constant_lookup(*params.values_at(:name, :scope))
+        redirect(constant_path(klass.to_s))
       else
-        redirect(constant_path(name))
+        e "failed to lookup constant `#{ params[:name] }' in scope #{ params[:scope] }"
       end
     end
 
-    get "files/*" do |path|
+    action "files/*" do |path|
       @path = "/" + path
       if File.stat(@path).directory?
         erb :directories_show
@@ -88,65 +77,82 @@ module Reflexive
       end
     end
 
-    get "constants/:klass/class_methods/:method/definition" do
-      find_klass
-      @method_name = params[:method]
+    get "/reflexive/load_path_lookup" do
+      path = params[:path]
+      feature = Reflexive.loaded_features_lookup(path) || Reflexive.load_path_lookup(path)
+      if feature
+        redirect(file_path(feature))
+      else
+        e "failed to find feature: #{ path }"
+      end
+    end
+
+    get %r</reflexive/constants/([^/&#]+)/class_methods/([^/&#]+)/definition> do |klass, method|
+      find_klass(klass)
+      @method_name = method
       @path, @line = @klass.method(@method_name).source_location
       @source = highlight_file(@path, :highlight_lines => [@line])
       erb :methods_definition
     end
 
-    get "constants/:klass/instance_methods/:method/definition" do
-      find_klass
-      @method_name = params[:method]
+    get %r</reflexive/constants/([^/&#]+)/instance_methods/([^/&#]+)/definition> do |klass, method|
+      find_klass(klass)
+      @method_name = method
       @path, @line = @klass.instance_method(@method_name).source_location
       @source = highlight_file(@path, :highlight_lines => [@line])
       erb :methods_definition
     end
 
-    get "/reflexive/constants/:klass/methods/:method/apidock" do
-      find_klass
-      @method_name = params[:method]
+    get %r</reflexive/constants/([^/&#]+)/methods/([^/&#]+)/apidock> do |klass, method|
+      find_klass(klass)
+      @method_name = method
       erb :methods_apidock
     end
 
-    get "constants/:klass/class_methods/:method" do
-      find_klass
-      if @klass.method(params[:method]).source_location
-        redirect(class_method_definition_path(params[:klass], params[:method]) +
-                "#highlighted")
-      else
-        redirect(method_documentation_path(params[:klass], params[:method]))
+    get %r</reflexive/constants/([^/&#]+)/class_methods/([^/&#]+)> do |klass, method|
+      find_klass(klass)
+      begin
+        if @klass.method(method).source_location
+          redirect(class_method_definition_path(klass, method) +
+                  "#highlighted")
+        else
+          redirect(method_documentation_path(klass, method))
+        end
+      rescue NameError
+        e "failed to find `#{ method }' class method for #{ klass }"
       end
     end
 
-    get "constants/:klass/instance_methods/:method" do
-      find_klass
-      if @klass.instance_method(params[:method]).source_location
-        redirect(instance_method_definition_path(params[:klass], params[:method]) +
-                "#highlighted")
-      else
-        redirect(method_documentation_path(params[:klass], params[:method]))
+    get %r</reflexive/constants/([^/&#]+)/instance_methods/([^/&#]+)> do |klass, method|
+      find_klass(klass)
+      begin
+        if @klass.instance_method(method).source_location
+          redirect(instance_method_definition_path(klass, method) +
+                  "#highlighted")
+        else
+          redirect(method_documentation_path(klass, method))
+        end
+      rescue NameError
+        e "failed to find `#{ method }' instance method for #{ klass }"
       end
     end
 
-    get "constants/:klass" do
-      # r Class.constants
-      find_klass
-      @methods = Reflexive::Methods.new(@klass)
-      #      @methods = Faster::OpenStruct.new(:klass => Faster::OpenStruct.new,
-      #                                        :instance => Faster::OpenStruct.new)
-      #
-      #      %w(public protected private).each do |visibility|
-      #        if (methods = @klass.send("#{ visibility }_methods").sort).present?
-      #          @methods.klass.send("#{ visibility }=", methods)
-      #        end
-      #
-      #        if (methods = @klass.send("#{ visibility }_instance_methods").sort).present?
-      #          @methods.instance.send("#{ visibility }=", methods)
-      #        end
-      #      end
-      #
+    get %r</reflexive/constants/([^/&#]+)> do |klass|
+      find_klass(klass)
+
+      exclude_trite = ![ BasicObject, Object ].include?(@klass)
+      @methods = Reflexive::Methods.new(@klass, :exclude_trite => exclude_trite)
+
+      ancestors_without_self_and_super = @klass.ancestors[2..-1] || []
+      class_ancestors = ancestors_without_self_and_super.select { |ancestor| ancestor.class == Class }
+      @class_ancestors = class_ancestors if class_ancestors.size > 0
+      
+      if @klass.respond_to?(:superclass) &&
+          @klass.superclass != Object &&
+          @klass.superclass != nil
+        @superclass = @klass.superclass  
+      end
+
       erb :constants_show
     end
 
@@ -154,8 +160,8 @@ module Reflexive
 
     error(404) { @app.call(env) if @app }
 
-    def find_klass
-      @klass = Reflexive.constantize(params[:klass]) if params[:klass]
+    def find_klass(klass = params[:klass])
+      @klass = Reflexive.constantize(klass) if klass 
     end
   end
 end

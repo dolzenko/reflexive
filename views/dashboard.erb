@@ -1,22 +1,50 @@
 <h1>
-  Reflexive
-</h1>
+  Reflexive </h1>
 
-<% if defined?(ActiveRecord::Base) %>
-  Models
-  <%= content_tag(:pre,
-                  constants_table(ActiveRecord::Base,
-                                  Reflexive.descendants(ActiveRecord::Base))) %>
-<% end %>
+<div class="dashboard">
+  <% if defined?(ActiveRecord::Base) || defined?(ApplicationController) %>
+    <div class="row">
+      <div class="column">
+        <% if defined?(ActiveRecord::Base) %>
+          <h2>Models</h2>
 
-<% if defined?(ApplicationController) %>
-  Controllers
-  <%= content_tag(:pre,
-                  constants_table(ApplicationController,
-                                  Reflexive.descendants(ApplicationController))) %>
-<% end %>
+          <div style="clear: both;"></div>
+          <div class="content">
+            <%= content_tag(:pre,
+                            constants_list(ActiveRecord::Base,
+                                            Reflexive.descendants(ActiveRecord::Base))) %>
+          </div>
+        <% end %>
+      </div>
+      <div class="column">
+        <% if defined?(ApplicationController) %>
+          <h2>Controllers</h2>
+          <%= content_tag(:pre,
+                          constants_list(ApplicationController,
+                                          Reflexive.descendants(ApplicationController))) %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+  <div class="row">
+    <div class="column">
+      <h2>Favorites</h2>
+      <% favorites = filter_existing_constants(%w(Rails ActiveSupport ActiveResource
+        ActiveRecord ActionView ActionController ActionDispatch ActionMailer ActiveModel
+        Sinatra DataMapper Sequel Rack Arel Capistrano Gem Haml Sass Hpricot Nokogiri
+        Rack Rake Rcov RDoc)) %>
+      <%= content_tag(:pre,
+                      constants_list(nil, favorites)) %>
+    </div>
+    <div class="column">
+      <h2>$LOAD_PATH</h2>
+      <% $LOAD_PATH.sort.each do |path| %>
+        <%= link_to_file(path) %><br/>
+      <% end %>
+    </div>
+  </div>
+</div>
 
-$LOAD_PATH
-<% $LOAD_PATH.sort.each do |path| %>
-  <%= link_to_file(path) %><br/>
-<% end %>
+
+
+
