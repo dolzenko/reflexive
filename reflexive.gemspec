@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.homepage    = "http://github.com/dolzenko/reflexive"
   s.summary     = "Reflexive"
 
-  s.files       = Dir.glob("{lib,public,views,spec}/**/*") + %w(reflexive.gemspec)
+  s.files       = Dir.glob("{lib,public,views,spec}/**/*") + %w(reflexive.gemspec Rakefile Gemfile config.ru)
 
   s.required_ruby_version = '>= 1.9.1'
 
