@@ -2,6 +2,30 @@ require "reflexive/helpers"
 require "reflexive/constantize"
 require "reflexive/descendants"
 
+# define all the fixtures here so that tests won't step on each other's toes
+module M1
+  class C1
+  end
+  module M2
+    module M3
+      class C2
+      end
+    end
+  end
+end
+
+class X2 ; end
+class A2 < X2; end
+class B2 < X2; end
+
+module M2
+end
+
+class C2
+end
+
+C2.extend(M2)
+
 describe "Reflexive.loaded_features_lookup" do
   before(:all) do
     @native_feature = $LOADED_FEATURES.detect { |f| f =~ /\.so\z/ }
@@ -33,17 +57,6 @@ describe "Reflexive.loaded_features_lookup" do
 end
 
 describe "Reflexive.constant_lookup" do
-  module M1
-    class C1
-    end
-    module M2
-      module M3
-        class C2
-        end
-      end
-    end
-  end
-
   it "looks up top-level constants" do
     Reflexive.constant_lookup("::String", "Some::Ignored::Scope").should == ::String
   end
@@ -76,18 +89,6 @@ describe "Reflexive.load_path_lookup" do
 end
 
 describe "Reflexive.descendants" do
-  class X2 ; end
-  class A2 < X2; end
-  class B2 < X2; end
-
-  module M2
-  end
-
-  class C2
-  end
-
-  C2.extend(M2)
-  
   it "finds class descendant" do
     Reflexive.descendants(X2).should =~ [B2, A2]
   end

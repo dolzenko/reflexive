@@ -7,7 +7,7 @@ end
 
 GEM_NAME = "reflexive"
 
-desc "Relese next version of reflexive gem"
+desc "Relese next version of reflexive gem (do that just after `git commit')"
 task :release do
   require "rubygems"
   require "rubygems/version"
@@ -26,6 +26,8 @@ task :release do
   sh "gem install #{ GEM_NAME } --version=#{ new_version } --local --verbose"
 
   File.delete("#{ GEM_NAME }-#{ new_version }.gem")
+  
+  sh "git push"
 end
 
 task :default => :spec

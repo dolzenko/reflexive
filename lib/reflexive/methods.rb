@@ -1,3 +1,5 @@
+require "reflexive/core_ext/kernel/singleton_class"
+
 module Reflexive
   class Methods
     def initialize(klass_or_module, options = {})
@@ -55,7 +57,7 @@ module Reflexive
         ancestor_name(ancestor, singleton)
       end
     end
-
+  
     def find_all
       ancestors = [] # flattened ancestors (both normal and singleton)
 

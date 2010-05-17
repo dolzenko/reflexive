@@ -32,7 +32,8 @@
       <% favorites = filter_existing_constants(%w(Rails ActiveSupport ActiveResource
         ActiveRecord ActionView ActionController ActionDispatch ActionMailer ActiveModel
         Sinatra DataMapper Sequel Rack Arel Capistrano Gem Haml Sass Hpricot Nokogiri
-        Rack Rake Rcov RDoc)) %>
+        Rack Rake Rcov RDoc
+        CGI Date Net REXML URI YAML FileUtils OpenStruct Pathname Time)) %>
       <%= content_tag(:pre,
                       constants_list(nil, favorites)) %>
     </div>

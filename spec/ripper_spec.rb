@@ -2,6 +2,10 @@ require "ripper"
 
 require File.expand_path("../sexp_builder_with_scanner_events", __FILE__)
 
+def bodystmt_sym
+  RUBY_VERSION > '1.9.1' ? :bodystmt : :body_stmt
+end
+
 describe Ripper do
   def events_tree(src)
     parser = SexpBuilderWithScannerEvents.new(src)
@@ -21,7 +25,8 @@ describe Ripper do
     end
   end
 
-  BODYSTMT_VOID = [:bodystmt, [[:void_stmt]], nil, nil, nil].freeze
+  BODYSTMT_VOID = [bodystmt_sym, [[:void_stmt]], nil, nil, nil].freeze
+
   PARAMS_VOID = [:params, nil, nil, nil, nil, nil].freeze
 
   describe "parser events" do
@@ -62,7 +67,7 @@ describe Ripper do
                 [:rest_param, {:ident=>"r"}],
                 [{:ident=>"a2"}],
                 [:blockarg, {:ident=>"b"}]]],
-              [:bodystmt,
+              [bodystmt_sym,
                [[:void_stmt]],
                [:rescue,
                 [:mrhs_new_from_args,
@@ -145,17 +150,18 @@ describe Ripper do
                         {:ident=>"v1"})
         block_variables("m do |;v1,v2| end",
                         {:ident=>"v1"}, {:ident=>"v2"})
-      end
+      end if RUBY_VERSION > '1.9.1'
 
       specify "tOROP => blockvar_new(params_new(Qnil,Qnil,Qnil,Qnil,Qnil), Qnil);" do
         block_variables("m do || end", nil)
       end
 
+
       specify "'|' block_param opt_bv_decl '|' => blockvar_new(escape_Qundef($2), escape_Qundef($3));" do
         block_params_and_variables("m do |a,o=1,*r,a2,&b;v1,v2| end",
                                    [f_arg, f_block_optarg, f_rest_arg, f_arg2, opt_f_block_arg],
                                    [{:ident=>"v1"}, {:ident=>"v2"}])
-      end
+      end if RUBY_VERSION > '1.9.1'
     end
 
     describe "block params according to parse.y" do

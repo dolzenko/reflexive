@@ -1,3 +1,5 @@
+require "reflexive/core_ext/kernel/singleton_class"
+
 module Reflexive
   module_function
   
