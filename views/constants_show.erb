@@ -19,9 +19,26 @@
 <% unless @methods.files.empty? %>
   <div>
     <h4>Defined In Files</h4>
-    <% @methods.files.sort.each do |path| %>
+    
+    <% files = @methods.files.sort %>
+    <% shown, hidden = files[0..5], files[6..-1] %>
+
+    <% shown.each do |path| %>
       <%= link_to_file(path) %><br/>
     <% end %>
+    
+    <% if hidden && !hidden.empty? %>
+      <div class="opener">
+        <a class="trigger" href="#">
+          ... <%= hidden.size %> files more
+        </a>
+        <div class="content">
+          <% hidden.each do |path| %>
+            <%= link_to_file(path) %><br/>
+          <% end %>
+        </div>
+      </div>
+    <% end %> 
   </div>
 <% end %>
 

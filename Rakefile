@@ -8,7 +8,7 @@ end
 GEM_NAME = "reflexive"
 
 desc "Relese next version of reflexive gem (do that just after `git commit')"
-task :release do
+task :release => :spec do
   require "rubygems"
   require "rubygems/version"
   require "yaml"

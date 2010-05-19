@@ -57,7 +57,7 @@ describe Reflexive::ReflexiveRipper do
   describe "injects method call scanner event tags" do
     specify "m!" do
       scanner_events_for("m!").should(have_tags(
-              {:method_call=>{:name=>"m!", :receiver=>[], :scope => []}}
+              {:method_call=>{:name=>"m!", :receiver=>:class, :scope => []}}
       ))
     end
 
@@ -109,7 +109,7 @@ describe Reflexive::ReflexiveRipper do
     specify "1.tap { (dv = 1).tap { puts dv } }" do
       scanner_events_for("1.tap { (dv = 1).tap { puts dv } }").should(have_exact_tags(
               {:local_variable_assignment=>"2:dv"},
-              {:method_call=>{:name=>"puts", :receiver=>[], :scope => []}},
+              {:method_call=>{:name=>"puts", :receiver=>:class, :scope => []}},
               {:local_variable_access=>"2:dv"}
       ))
     end
@@ -123,8 +123,9 @@ describe Reflexive::ReflexiveRipper do
     specify "tv = 1; def m; puts tv; end" do
       scanner_events_for("tv = 1; def m; puts tv; end").should(have_tags(
               {:local_variable_assignment=>"1:tv"},
-              {:method_call=>{:name=>"puts", :receiver=>[:instance], :scope => []}},
-              {:method_call=>{:name=>"tv", :receiver=>[:instance], :scope => []}}))
+              {:method_call=>{:name=>"puts", :receiver=>:instance, :scope => []}},
+              {:method_call=>{:name=>"tv", :receiver=>:instance, :scope => []}}
+      ))
     end
 
   end
@@ -133,44 +134,54 @@ describe Reflexive::ReflexiveRipper do
     describe "for method calls" do
       specify "from top level" do
         scanner_events_for("m()").should(have_tags(
-              {:method_call=>{:name=>"m", :receiver=>[], :scope => []}}))
+              {:method_call=>{:name=>"m", :receiver=>:class, :scope => []}}
+        ))
       end
 
       specify "class definition level" do
         scanner_events_for("class C; cm(); end").should(have_tags(
-              {:method_call=>{:name=>"cm", :receiver=>["C"], :scope => ["C"]}}))
+              {:method_call=>{:name=>"cm", :receiver=>:class, :scope => ["C"]}}
+        ))
         scanner_events_for("module M; cm(); end").should(have_tags(
-              {:method_call=>{:name=>"cm", :receiver=>["M"], :scope => ["M"]}}))
+              {:method_call=>{:name=>"cm", :receiver=>:class, :scope => ["M"]}}
+        ))
       end
 
       specify "class instance level" do
         scanner_events_for("class C; def im1; im2; end end").should(have_tags(
-              {:method_call=>{:name=>"im2", :receiver=>["C", :instance], :scope => ["C"]}}))
+              {:method_call=>{:name=>"im2", :receiver=>:instance, :scope => ["C"]}}
+        ))
         scanner_events_for("module M; def im1; im2; end end").should(have_tags(
-              {:method_call=>{:name=>"im2", :receiver=>["M", :instance], :scope => ["M"]}}))
+              {:method_call=>{:name=>"im2", :receiver=>:instance, :scope => ["M"]}}
+        ))
       end
 
       specify "class singleton level" do
         scanner_events_for("class C; def self.cm1() cm2; end end").should(have_tags(
-              {:method_call=>{:name=>"cm2", :receiver=>["C"], :scope => ["C"]}}))
+              {:method_call=>{:name=>"cm2", :receiver=>:class, :scope => ["C"]}}
+        ))
         scanner_events_for("module M; def self.cm1() cm2; end end").should(have_tags(
-              {:method_call=>{:name=>"cm2", :receiver=>["M"], :scope => ["M"]}}))
+              {:method_call=>{:name=>"cm2", :receiver=>:class, :scope => ["M"]}}
+        ))
       end
 
-      pending "nested method calls with constant references" do
+      specify "class singleton level for methods defined with class << self" do
+        scanner_events_for("class C; class << self; def cm1(); cm2; end end end").should(have_tags(
+              {:method_call=>{:name=>"cm2", :receiver=>:class, :scope => ["C"]}}
+        ))
+      end
+
+      specify "nested method calls with constant references" do
         src = <<-RUBY
           module M
             class C
-              def self.m
-              end
             end
-          end
-          class M::C
-            def m
-              c = C.m
-            end
+            C.new
           end
         RUBY
+        scanner_events_for(src).should(have_tags(
+              {:method_call=>{:name=>"new", :receiver=>["C"], :scope => ["M"]}}
+        ))
       end
     end
 
@@ -232,6 +243,33 @@ describe Reflexive::ReflexiveRipper do
               {:constant_access=>{:name=>"C", :scope=>[]}}
         ))
 
+      end
+
+      specify "from instance methods params" do
+        scanner_events_for("def m(a = C.new(m1), b = D.new(m2)); end").should(have_tags(
+              {:constant_access=>{:name=>"C", :scope=>[]}},
+              {:constant_access=>{:name=>"D", :scope=>[]}}
+        ))
+      end
+
+      specify "for superclass" do
+        scanner_events_for("class C < D; end").should(have_tags(
+              {:constant_access=>{:name=>"D", :scope=>[]}}
+        ))
+      end
+
+      specify "autoload hint" do
+        scanner_events_for("module M; autoload :C; end").should(have_tags(
+              {:constant_access=>{:name=>"C", :scope=>["M"]}}
+        ))
+
+        scanner_events_for("module M; autoload 'C'; end").should(have_tags(
+              {:constant_access=>{:name=>"C", :scope=>["M"]}}
+        ))
+
+        scanner_events_for("module M; autoload('C'); end").should(have_tags(
+              {:constant_access=>{:name=>"C", :scope=>["M"]}}
+        ))
       end
     end
   end

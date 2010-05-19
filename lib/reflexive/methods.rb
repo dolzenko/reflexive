@@ -1,4 +1,5 @@
 require "reflexive/core_ext/kernel/singleton_class"
+require "reflexive/core_ext/module/reflexive_instance_methods"
 
 module Reflexive
   class Methods
@@ -36,7 +37,7 @@ module Reflexive
     def each_immediate_class_and_instance_method(&block)
       VISIBILITIES.each do |visibility|
         [ @klass_or_module, @klass_or_module.singleton_class ].each do |klass|
-          methods = klass.send("#{ visibility }_instance_methods", false)
+          methods = klass.send("reflexive_#{ visibility }_instance_methods", false)
           methods.each { |m| block.call(klass.instance_method(m)) }
         end
       end
@@ -123,7 +124,7 @@ module Reflexive
     # when no methods are found - returns nil
     def collect_instance_methods(klass)
       methods_with_visibility = VISIBILITIES.map do |visibility|
-        methods = klass.send("#{ visibility }_instance_methods", false)
+        methods = klass.send("reflexive_#{ visibility }_instance_methods", false)
         [visibility, methods] unless methods.empty?
       end.compact
       Hash[methods_with_visibility] unless methods_with_visibility.empty?

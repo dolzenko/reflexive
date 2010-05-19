@@ -1,3 +1,3 @@
-require File.expand_path("../lib/reflexive/application", __FILE__)
+require ::File.expand_path("../lib/reflexive/application", __FILE__)
 
 run Reflexive::Application

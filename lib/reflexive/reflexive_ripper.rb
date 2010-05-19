@@ -19,8 +19,11 @@ module Reflexive
 
     def parse
       parse_tree = super
-      require 'pp'
-      # pp parse_tree
+      
+      if ENV["DEBUG"]
+        require 'pp'
+        pp parse_tree
+      end
 
       ParseTreeTopDownWalker.new(parse_tree).walk
       parse_tree

@@ -14,26 +14,243 @@ Rspec::Matchers.define :generate_methods do |expected|
   end
 end
 
+describe "Ruby reflection capabilities" do
+  describe "for Modules" do
+    describe "#singleton_class" do
+      specify ".public_instance_methods(false) returns empty list for empty module" do
+        Module.new.singleton_class.
+                reflexive_public_instance_methods(false).should == []
+      end
+
+      specify ".protected_instance_methods(false) returns empty list for empty module" do
+        Module.new.singleton_class.
+                reflexive_protected_instance_methods(false).should == []
+      end
+
+      specify ".private_instance_methods(false) returns empty list for empty module" do
+        Module.new.singleton_class.
+                reflexive_private_instance_methods(false).should == []
+      end
+
+      specify ".public_instance_methods(false) returns public methods" do
+        Module.new { def self.m; end }.singleton_class.
+                reflexive_public_instance_methods(false).should == [:m]
+      end
+
+      specify ".protected_instance_methods(false) returns protected methods" do
+        Module.new { class << self; protected; def m; end end }.singleton_class.
+                reflexive_protected_instance_methods(false).should == [:m]
+      end
+
+      specify ".private_instance_methods(false) returns private methods" do
+        Module.new { class << self; private; def m; end end }.singleton_class.
+                reflexive_private_instance_methods(false).should == [:m]
+      end
+    end
+
+    specify ".public_instance_methods(false) returns empty list for empty module" do
+      Module.new.
+              reflexive_public_instance_methods(false).should == []
+    end
+
+    specify ".protected_instance_methods(false) returns empty list for empty module" do
+      Module.new.
+              reflexive_protected_instance_methods(false).should == []
+    end
+
+    specify ".private_instance_methods(false) returns empty list for empty module" do
+      Module.new.
+              reflexive_private_instance_methods(false).should == []
+    end
+
+    specify ".public_instance_methods(false) returns public methods" do
+      Module.new { def m; end }.
+              reflexive_public_instance_methods(false).should == [:m]
+    end
+
+    specify ".protected_instance_methods(false) returns protected methods" do
+      Module.new { protected; def m; end }.
+              reflexive_protected_instance_methods(false).should == [:m]
+    end
+
+    specify ".private_instance_methods(false) returns private methods" do
+      Module.new { private; def m; end }.
+              reflexive_private_instance_methods(false).should == [:m]
+    end
+  end
+
+  describe "for Classes" do
+    class ::RubyReflectionCapabilitiesEmptyClass
+    end
+
+    class ::RubyReflectionCapabilitiesSingletonMethodsClass
+      class << self
+        def publ
+        end
+        protected
+        def prot
+        end
+        private
+        def priv
+        end
+      end
+    end
+
+    class ::RubyReflectionCapabilitiesInstanceMethodsClass
+      def publ
+      end
+      protected
+      def prot
+      end
+      private
+      def priv
+      end
+    end
+
+    describe "#singleton_class" do
+      specify ".public_instance_methods(false) returns empty list for empty class" do
+        RubyReflectionCapabilitiesEmptyClass.singleton_class.
+                reflexive_public_instance_methods(false).should == []
+      end
+
+      specify ".protected_instance_methods(false) returns empty list for empty class" do
+        RubyReflectionCapabilitiesEmptyClass.singleton_class.
+                reflexive_protected_instance_methods(false).should == []
+      end
+
+      specify ".private_instance_methods(false) returns empty list for empty class" do
+        RubyReflectionCapabilitiesEmptyClass.singleton_class.
+                reflexive_private_instance_methods(false).should == []
+      end
+
+      specify ".public_instance_methods(false) returns public methods" do
+        RubyReflectionCapabilitiesSingletonMethodsClass.singleton_class.
+                reflexive_public_instance_methods(false).should == [:publ]
+      end
+
+      specify ".protected_instance_methods(false) returns protected methods" do
+        RubyReflectionCapabilitiesSingletonMethodsClass.singleton_class.
+                reflexive_protected_instance_methods(false).should == [:prot]
+      end
+
+      specify ".private_instance_methods(false) returns private methods" do
+        RubyReflectionCapabilitiesSingletonMethodsClass.singleton_class.
+                reflexive_private_instance_methods(false).should == [:priv]
+      end
+    end
+
+    describe "#" do
+      specify ".public_instance_methods(false) returns empty list for empty class" do
+        RubyReflectionCapabilitiesEmptyClass.
+                reflexive_public_instance_methods(false).should == []
+      end
+
+      specify ".protected_instance_methods(false) returns empty list for empty class" do
+        RubyReflectionCapabilitiesEmptyClass.
+                reflexive_protected_instance_methods(false).should == []
+      end
+
+      specify ".private_instance_methods(false) returns empty list for empty class" do
+        RubyReflectionCapabilitiesEmptyClass.
+                reflexive_private_instance_methods(false).should == []
+      end
+
+     specify ".public_instance_methods(false) returns public methods" do
+        RubyReflectionCapabilitiesInstanceMethodsClass.
+                reflexive_public_instance_methods(false).should == [:publ]
+      end
+
+      specify ".protected_instance_methods(false) returns protected methods" do
+        RubyReflectionCapabilitiesInstanceMethodsClass.
+                reflexive_protected_instance_methods(false).should == [:prot]
+      end
+
+      specify ".private_instance_methods(false) returns private methods" do
+        RubyReflectionCapabilitiesInstanceMethodsClass.
+                reflexive_private_instance_methods(false).should == [:priv]
+      end
+    end
+  end
+end
+
 describe Reflexive::Methods do
+  describe "#trite_singleton_ancestors" do
+    it "returns some common trite objects" do
+      Reflexive::Methods.new(nil).
+              send(:trite_singleton_ancestors).
+              should(include(Class, Module, Object, BasicObject, Kernel))
+    end
+  end
+
+  describe "#trite_ancestors" do
+    it "returns some common trite objects" do
+      Reflexive::Methods.new(nil).
+              send(:trite_ancestors).
+              should(include(Object, Kernel, BasicObject))
+    end
+  end
+
+  describe "#collect_instance_methods" do
+    class ::CollectInstanceMethodsC
+      def public_instance_meth
+      end
+      protected
+      def protected_instance_meth
+      end
+      private
+      def private_instance_meth
+      end
+    end
+    
+    it "collects own (defined in class) instance methods for class" do
+      Reflexive::Methods.new(nil).
+              send(:collect_instance_methods, ::CollectInstanceMethodsC).
+              should == { :public => [ :public_instance_meth ],
+                          :protected => [ :protected_instance_meth ],
+                          :private => [ :private_instance_meth ] }
+    end
+
+    module ::CollectInstanceMethodsEmptyM
+    end
+
+    it "reports empty own instance methods for empty module" do
+      Reflexive::Methods.new(nil).
+              send(:collect_instance_methods, ::CollectInstanceMethodsEmptyM).
+              should == nil
+    end
+
+    it "reports empty own class methods for empty module" do
+      Reflexive::Methods.new(nil).
+              send(:collect_instance_methods, ::CollectInstanceMethodsEmptyM.singleton_class).
+              should == nil
+    end
+  end
+
   describe "ModuleInclusionC" do
-    module ModuleInclusionA
+    module ::ModuleInclusionA
       def module_instance_from_A_WTF!
       end
     end
 
-    module ModuleInclusionB
-      include ModuleInclusionA
+    module ::ModuleInclusionB
+      include ::ModuleInclusionA
 
       def module_instance_from_B_WTF!
       end
     end
 
-    module ModuleInclusionC
-      include ModuleInclusionB
+    module ::ModuleInclusionC
+      include ::ModuleInclusionB
+    end
+
+    it "has ModuleInclusionA and ModuleInclusionB ancestors" do
+      ModuleInclusionC.ancestors.should =~ [ ModuleInclusionC,
+                                             ModuleInclusionA,
+                                             ModuleInclusionB ] 
     end
 
     it "works" do
-      ModuleInclusionC.should generate_methods(<<-METHODS_PP)
+      ::ModuleInclusionC.should generate_methods(<<-METHODS_PP)
       [{"[M] ModuleInclusionB"=>
        {:instance=>{:public=>[:module_instance_from_B_WTF!]}}},
        {"[M] ModuleInclusionA"=>
@@ -41,16 +258,17 @@ describe Reflexive::Methods do
       METHODS_PP
     end
   end
+  
   describe "Inheritance" do
-    class InheritanceA
+    class ::InheritanceA
       def self.singleton_inherited_from_A_WTF!
       end
     end
 
-    class InheritanceB < InheritanceA
+    class ::InheritanceB < ::InheritanceA
     end
 
-    class InheritanceC < InheritanceB
+    class ::InheritanceC < ::InheritanceB
       def test
       end
     end
@@ -64,19 +282,19 @@ describe Reflexive::Methods do
   end
 
   describe "SingletonAndInstance" do
-    module M
+    module ::M
       def instance_from_moduleWTF!
       end
     end
 
-    module SM
+    module ::SM
       def singleton_from_moduleWTF!
       end
     end
 
-    class SingletonAndInstanceTest
-      include M
-      extend SM
+    class ::SingletonAndInstanceTest
+      include ::M
+      extend ::SM
 
       def self.singletonWTF!
       end
@@ -97,7 +315,7 @@ describe Reflexive::Methods do
   end
 
   describe "ExtendWithInstanceAndClass" do
-    module ExtendWithInstanceAndClassM
+    module ::ExtendWithInstanceAndClassM
       def self.singleton_WTF!
       end
 
@@ -105,19 +323,19 @@ describe Reflexive::Methods do
       end
     end
 
-    class ExtendWithInstanceAndClass
-      extend ExtendWithInstanceAndClassM
+    class ::ExtendWithInstanceAndClass
+      extend ::ExtendWithInstanceAndClassM
     end
 
     it "works" do
-      ExtendWithInstanceAndClass.should generate_methods(<<-METHODS_PP)
+      ::ExtendWithInstanceAndClass.should generate_methods(<<-METHODS_PP)
       [{"S[M] ExtendWithInstanceAndClassM"=>{:class=>{:public=>[:instance_WTF!]}}}]
       METHODS_PP
     end
   end
 
   describe "SingletonVisibility" do
-    class SingletonVisibility
+    class ::SingletonVisibility
       def self.class_method
       end
 
@@ -138,7 +356,7 @@ describe Reflexive::Methods do
     end
 
     it "works" do
-      SingletonVisibility.should generate_methods(<<-METHODS_PP)
+      ::SingletonVisibility.should generate_methods(<<-METHODS_PP)
       [{"[C] SingletonVisibility"=>
          {:class=>
            {:public=>[:class_method, :public_singleton_method],
@@ -149,28 +367,28 @@ describe Reflexive::Methods do
   end
 
   describe "SingletonOverrides" do
-    class SingletonOverridesA
+    class ::SingletonOverridesA
       def self.overriden
         puts "A"
         # super
       end
     end
 
-    module SingletonOverridesMB
+    module ::SingletonOverridesMB
       def overriden
         puts "  MB"
         super
       end
     end
 
-    class SingletonOverridesB < SingletonOverridesA
-      extend SingletonOverridesMB
+    class ::SingletonOverridesB < ::SingletonOverridesA
+      extend ::SingletonOverridesMB
 
       def self.overriden
       end
     end
 
-    module SingletonOverridesMC
+    module ::SingletonOverridesMC
       def overriden
       end
 
@@ -178,8 +396,8 @@ describe Reflexive::Methods do
       end
     end
 
-    class SingletonOverridesC < SingletonOverridesB
-      extend SingletonOverridesMC
+    class ::SingletonOverridesC < ::SingletonOverridesB
+      extend ::SingletonOverridesMC
 
       def self.class_WTF
       end
@@ -189,7 +407,7 @@ describe Reflexive::Methods do
     end
     
     it "works" do
-      SingletonOverridesC.should generate_methods(<<-METHODS_PP)
+      ::SingletonOverridesC.should generate_methods(<<-METHODS_PP)
         [{"[C] SingletonOverridesC"=>{:class=>{:public=>[:class_WTF, :overriden]}}},
          {"S[M] SingletonOverridesMC"=>
            {:class=>{:public=>[:overriden, :singleton_WTF]}}},

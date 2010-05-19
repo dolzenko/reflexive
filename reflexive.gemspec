@@ -13,13 +13,16 @@ Gem::Specification.new do |s|
   s.required_ruby_version = '>= 1.9.1'
 
   # keeping this in sync with Gemfile manually
-  s.add_dependency "rack"
-  s.add_dependency "sinatra"
-  s.add_dependency "sinatra_more"
-  s.add_dependency "coderay"
-  s.add_dependency "rdiscount"
+  s.add_dependency "rack", "1.1.0"
+  s.add_dependency "sinatra", "1.0"
+  s.add_dependency "sinatra_more", "0.3.40"
+  s.add_dependency "coderay", "0.9.3"
+  #  s.add_dependency "rdiscount"
 
   s.add_development_dependency "rails", "3.0.0.beta3"
   s.add_development_dependency "rspec", "2.0.0.beta.8"
-  s.add_development_dependency "sinatra-reloader"
+  s.add_development_dependency "sinatra-reloader", "0.4.1"
+  s.add_development_dependency "thin", "1.2.7"
+  s.add_development_dependency "rack-test", "0.5.3"
+  s.add_development_dependency "webrat", "0.7.1"
 end

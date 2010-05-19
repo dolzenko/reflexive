@@ -1,0 +1,11 @@
+<div>
+  Calling <code><%= @name %></code> <%= @level %> method from
+  <code><%= @klass %></code> can dispatch to following methods 
+</div>
+
+<div>
+  <% links = @definitions.
+          sort_by { |klass, _, _| klass.to_s }.
+          map { |d| full_name_link_to_method(*d) } %>
+  <%= content_tag :pre, links.join("\n") %>
+</div>

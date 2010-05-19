@@ -49,6 +49,7 @@ module Reflexive
       in_backtick = false
       in_symbol = false
       in_embexpr_nesting = 0
+
       scanner_events.each do |scanner_event|
         token_val, event, tags =
                 ReflexiveRipper.destruct_scanner_event(scanner_event)
@@ -107,6 +108,7 @@ module Reflexive
           #                  }
           #              ;
           @coderay_tokens << [token_val, :content]
+          @coderay_tokens.last << tags if tags
           @coderay_tokens << [:close, :symbol]
           in_symbol = false
         elsif ripper_token == :regexp_beg

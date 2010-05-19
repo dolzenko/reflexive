@@ -33,7 +33,7 @@ module Reflexive
         super(text, type)
         @out << "</a>"
       else
-        super(text, type) rescue raise([text, type].inspect)
+        super(text, type)
       end
     end
 

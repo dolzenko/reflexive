@@ -26,6 +26,13 @@ end
 
 C2.extend(M2)
 
+module ModuleDescendantBaseModule
+end
+
+module ModuleDescendantModule
+  include ModuleDescendantBaseModule
+end
+
 describe "Reflexive.loaded_features_lookup" do
   before(:all) do
     @native_feature = $LOADED_FEATURES.detect { |f| f =~ /\.so\z/ }
@@ -59,6 +66,10 @@ end
 describe "Reflexive.constant_lookup" do
   it "looks up top-level constants" do
     Reflexive.constant_lookup("::String", "Some::Ignored::Scope").should == ::String
+  end
+
+  it "looks up top-level constants when passed empty scope" do
+    Reflexive.constant_lookup("String", "").should == ::String
   end
 
   it "returns nil for non existing top-level constant" do
@@ -95,5 +106,9 @@ describe "Reflexive.descendants" do
 
   it "finds singleton class descendant" do
     Reflexive.descendants(M2).should =~ [C2]
+  end
+
+  it "reports modules which include module as descendants" do
+    Reflexive.descendants(ModuleDescendantBaseModule) =~ [ModuleDescendantModule]
   end
 end

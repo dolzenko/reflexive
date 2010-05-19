@@ -34,7 +34,17 @@ module Reflexive
       ancestors = c.singleton_class.ancestors[0 .. (generations || -1)]
       subclass << c if ancestors.include?(klass)
     end
-    
+
+    if klass.instance_of?(Module)
+      # descendants of module are also modules which include the module
+      ObjectSpace.each_object(Module) do |c|
+        next if c == klass
+
+        ancestors = c.ancestors[0 .. (generations || -1)]
+        subclass << c if ancestors.include?(klass)
+      end
+    end
+
     subclass
   end
 end

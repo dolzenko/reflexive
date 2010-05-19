@@ -1,10 +1,9 @@
-<h1>
-  Reflexive </h1>
+<h1> Reflexive </h1>
 
 <div class="dashboard">
   <% if defined?(ActiveRecord::Base) || defined?(ApplicationController) %>
     <div class="row">
-      <div class="column">
+      <div class="column first">
         <% if defined?(::ActiveRecord::Base) %>
           <h2>Models</h2>
 
@@ -27,7 +26,7 @@
     </div>
   <% end %>
   <div class="row">
-    <div class="column">
+    <div class="column first">
       <h2>Favorites</h2>
       <% favorites = filter_existing_constants(%w(Rails ActiveSupport ActiveResource
         ActiveRecord ActionView ActionController ActionDispatch ActionMailer ActiveModel

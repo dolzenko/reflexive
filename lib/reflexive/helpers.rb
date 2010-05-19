@@ -3,15 +3,26 @@ require "reflexive/coderay_ruby_scanner"
 require "reflexive/coderay_html_encoder"
 
 module Reflexive
+  def self.class_reloading_active?
+    if defined?(Rails)
+      !Rails.configuration.cache_classes rescue false
+    else
+      false
+    end
+  end
+
   FILE_EXT = /\.\w+\z/
   DL_EXT = /\.s?o\z/
   def self.load_path_lookup(path)
     path_with_rb_ext = path.sub(FILE_EXT, "") + ".rb"
-    feature = nil
-    $LOAD_PATH.detect do |load_path|
-      File.exists?(feature = File.join(load_path, path_with_rb_ext))
+
+    $LOAD_PATH.each do |load_path|
+      if feature = File.join(load_path, path_with_rb_ext)
+        return feature if File.exists?(feature)
+      end
     end
-    feature
+
+    nil
   end
 
   def self.loaded_features_lookup(path)
@@ -48,11 +59,11 @@ module Reflexive
         tokens = CodeRayRubyScanner.new(src).tokenize
         encoder = CodeRayHtmlEncoder.new(options)
         encoder.encode_tokens(tokens)
-      elsif path =~ /\.(markdown|md)$/
-        require "rdiscount"
-        src = IO.read(path)
-        markdown = RDiscount.new(src)
-        markdown.to_html
+#      elsif path =~ /\.(markdown|md)$/
+#        require "rdiscount"
+#        src = IO.read(path)
+#        markdown = RDiscount.new(src)
+#        markdown.to_html
       else
         CodeRay.scan_file(path).html(options).div
       end
@@ -167,6 +178,12 @@ module Reflexive
       link_to(Rack::Utils.escape_html(link_text),
               new_method_path(constant, level, method_name),
               :title => (method_name if link_text.include?("...")))
+    end
+
+    def full_name_link_to_method(constant, level, method_name)
+      link_text = "#{ constant }#{ level == :instance ? "#" : "." }#{ method_name }"
+      link_to(Rack::Utils.escape_html(link_text),
+              new_method_path(constant, level, method_name))
     end
 
     ##

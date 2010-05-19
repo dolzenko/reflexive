@@ -91,7 +91,17 @@ module Reflexive
       return unless params_event
       params_event = params_event[1] if params_event[0] == :paren # ?
       found = false
-      for scanner_event in extract_scanner_events_from_tree(params_event)
+
+      if options_arguments = params_event[2]
+        options_arguments.each do |optional_argument|
+          if scanner_event?(event = optional_argument[0])
+            add_local_variable(event)
+            keep_walking(optional_argument[1..-1])
+          end
+        end
+      end
+
+      for scanner_event in extract_scanner_events_from_tree(params_event.values_at(1,3,4,5))
         if scanner_event[:ident]
           found = true
           add_local_variable(scanner_event)
@@ -167,10 +177,11 @@ module Reflexive
 
     def on_def(name, params, body)
       push_local_variables_context
+      # TODO this is hack :(
+      push_namespace_instance_scope unless @in_singleton_class_defition
       add_local_variables_from_params_event(params)
-      push_namespace_instance_scope
       keep_walking(body)
-      pop_namespace_scope
+      pop_namespace_scope unless @in_singleton_class_defition
       pop_local_variables_context
     end
 
@@ -182,7 +193,7 @@ module Reflexive
     end
 
     def on_class(name, ancestor, body)
-      keep_walking(name)
+      keep_walking(name, ancestor)
       push_local_variables_context
       push_namespace_scope(resolve_constant_ref(name))
       keep_walking(body)
@@ -192,7 +203,9 @@ module Reflexive
 
     def on_sclass(target, body)
       push_local_variables_context
+      @in_singleton_class_defition = true
       keep_walking(body)
+      @in_singleton_class_defition = false
       pop_local_variables_context
     end
 
@@ -231,11 +244,59 @@ module Reflexive
 
     def on_command(operation, command_args)
       method_call(operation, nil) if is_ident?(operation)
+      if operation[:ident] == "autoload" &&
+              (arguments = resolve_arguments(command_args))
+
+        if [:const, :tstring_content].include?(arguments[0].keys.first)
+          constant_access(arguments[0], arguments[0].values.first)
+        end
+      end
       keep_walking(command_args)
+    end
+
+    def resolve_arguments(arguments)
+      arguments = arguments[1] if arguments[0] == :arg_paren
+      if arguments[0] == :args_add_block
+        if arguments[1].is_a?(Array)
+          arguments[1].map { |a| resolve_argument(a) }
+        end
+      end
+    end
+
+    def resolve_argument(argument)
+      if argument[0] == :symbol_literal
+        # [:symbol_literal, [:symbol, {:const=>"C"}]]
+        if argument[1].is_a?(Array)
+          if argument[1][0] == :symbol
+            argument[1][1] # {:const=>"C"}
+          end
+        end
+      elsif argument[0] == :string_literal
+        # [:string_literal, [:string_content, {:tstring_content=>"C"}]]
+        if argument[1].is_a?(Array)
+          if argument[1][0] == :string_content
+            argument[1][1] # {:tstring_content=>"C"}
+          end
+        end
+      end
     end
 
     def on_fcall(operation)
       method_call(operation, nil) if is_ident?(operation)
+    end
+
+    def on_method_add_arg(method, arguments)
+
+      if method[0] == :fcall &&
+              scanner_event?(method[1]) &&
+              method[1][:ident] == "autoload"
+        if arguments = resolve_arguments(arguments)
+          if [:const, :tstring_content].include?(arguments[0].keys.first)
+            constant_access(arguments[0], arguments[0].values.first)
+          end
+        end
+      end
+      keep_walking(method, arguments)
     end
 
     # primary_value => anything
@@ -277,9 +338,9 @@ module Reflexive
     def on_call(receiver, dot, method)
       if rcv = resolve_receiver(receiver)
         method_call(method, [rcv])
-      else
-        keep_walking(receiver)
       end
+       
+      keep_walking(receiver)
     end
 
     def on_var_ref(ref_event)
@@ -328,8 +389,8 @@ module Reflexive
 
     def method_call(scanner_event, receiver, *args)
       unless receiver
-        # implict self concept
-        receiver = @scope.dup
+        # implict self concept (will be fetched from constant_access_scope)
+        receiver = @scope.last == :instance ? :instance : :class
       end
       merge_tags(scanner_event,
                  {:method_call =>

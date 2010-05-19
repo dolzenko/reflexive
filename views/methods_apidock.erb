@@ -1,9 +1,17 @@
 <h2>
   <%= @klass.name %>#<%= @method_name %>
 </h2>
+
+<div>
+  Documentation provided by <a href="http://apidock.com/">APIdock</a>
+  <%= link_to apidock_path(@klass.name, @level, @method_name),
+              apidock_path(@klass.name, @level, @method_name) %> :
+  
+</div>
+
 <%= content_tag :iframe,
                 "",
-                :src => apidock_path(@klass.name, @method_name),
+                :src => apidock_path(@klass.name, @level, @method_name),
                 :frameborder => 0,
                 :style => "width: 960px; height: 100%; position: absolute",
                 :id => "apidock" %>

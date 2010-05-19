@@ -102,6 +102,11 @@ pre .lva-highlight
 .dashboard .column
 {
   float: left;
+
+}
+
+.dashboard .column.first
+{
   width: 350px;
 }
 

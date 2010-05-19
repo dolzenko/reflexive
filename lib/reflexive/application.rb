@@ -12,10 +12,12 @@ require "reflexive/columnizer"
 require "reflexive/constantize"
 require "reflexive/descendants"
 require "reflexive/methods"
+require "reflexive/method_lookup"
 
 if ENV["SINATRA_RELOADER"]
   require "rails/all"
   require "arel"
+  require File.expand_path("../../../spec/integration_spec_fixture", __FILE__)
 
   module ::Kernel
     def r(*args)
@@ -60,10 +62,11 @@ module Reflexive
     end
 
     action "constant_lookup" do
-      if klass = Reflexive.constant_lookup(*params.values_at(:name, :scope))
+      if (klass = Reflexive.constant_lookup(*params.values_at(:name, :scope))) &&
+              (klass.instance_of?(Class) || klass.instance_of?(Module)) 
         redirect(constant_path(klass.to_s))
       else
-        e "failed to lookup constant `#{ params[:name] }' in scope #{ params[:scope] }"
+        e "failed to lookup class/module with name `#{ params[:name] }' in scope #{ params[:scope] }"
       end
     end
 
@@ -103,38 +106,50 @@ module Reflexive
       erb :methods_definition
     end
 
-    get %r</reflexive/constants/([^/&#]+)/methods/([^/&#]+)/apidock> do |klass, method|
+    get %r</reflexive/constants/([^/&#]+)/instance_methods/([^/&#]+)/apidock> do |klass, method|
       find_klass(klass)
       @method_name = method
+      @level = :instance
       erb :methods_apidock
+    end
+
+    get %r</reflexive/constants/([^/&#]+)/class_methods/([^/&#]+)/apidock> do |klass, method|
+      find_klass(klass)
+      @method_name = method
+      @level = :class
+      erb :methods_apidock
+    end
+
+    def method_lookup_action(klass, level, name)
+      lookup = MethodLookup.new(klass: klass, level: level, name: name)
+      if definitions = lookup.definitions
+        if definitions.size == 1
+          redirect(new_method_definition_path(*definitions[0]) + "#highlighted")
+        else
+          @definitions, @klass, @level, @name = definitions, klass, level, name
+          erb :methods_choose
+        end
+      elsif documentations = lookup.documentations
+        if documentations.size == 1
+          redirect(method_documentation_path(*documentations[0]))
+        else
+          raise ArgumentError, "don't know how to handle multiple documentations"
+        end
+      else
+        e "failed to find `#{ name }' #{ level } method for #{ klass }"
+      end
+      #
+      # e "failed to find `#{ method }' instance method for #{ klass }"
     end
 
     get %r</reflexive/constants/([^/&#]+)/class_methods/([^/&#]+)> do |klass, method|
       find_klass(klass)
-      begin
-        if @klass.method(method).source_location
-          redirect(class_method_definition_path(klass, method) +
-                  "#highlighted")
-        else
-          redirect(method_documentation_path(klass, method))
-        end
-      rescue NameError
-        e "failed to find `#{ method }' class method for #{ klass }"
-      end
+      method_lookup_action(@klass, :class, method)
     end
 
     get %r</reflexive/constants/([^/&#]+)/instance_methods/([^/&#]+)> do |klass, method|
       find_klass(klass)
-      begin
-        if @klass.instance_method(method).source_location
-          redirect(instance_method_definition_path(klass, method) +
-                  "#highlighted")
-        else
-          redirect(method_documentation_path(klass, method))
-        end
-      rescue NameError
-        e "failed to find `#{ method }' instance method for #{ klass }"
-      end
+      method_lookup_action(@klass, :instance, method)
     end
 
     get %r</reflexive/constants/([^/&#]+)> do |klass|

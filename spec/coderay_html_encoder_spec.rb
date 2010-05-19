@@ -11,6 +11,12 @@ describe Reflexive::CodeRayHtmlEncoder do
                             {:constant_access=>{:name=>"Cons", :scope=>[]}}]]).should(include("<a href"))
   end
 
+  it "emits constant links for :content tokens" do
+    encoder = Reflexive::CodeRayHtmlEncoder.new(:wrap => :div, :css => :style)
+    encoder.encode_tokens([["Cons", :content,
+                            {:constant_access=>{:name=>"Cons", :scope=>[]}}]]).should(include("<a href"))
+  end
+
   it "emits links with proper nesting info" do
     tokens = [["Cons", :constant,
                {:constant_access=>{:name=>"Cons", :scope=>["A", "B"]}}]]
@@ -26,7 +32,7 @@ describe Reflexive::CodeRayHtmlEncoder do
   it "emits class method links" do
     tokens = [ [
                   "m!", :ident,
-                  {:method_call=>{:name=>"m!", :receiver=>["A"]} }
+                  {:method_call=>{:name=>"m!", :receiver=>:class, :scope=>["A"]} }
              ] ]
     encoder.encode_tokens(tokens).should include("/constants/A/class_methods/m%21")
   end
@@ -34,7 +40,7 @@ describe Reflexive::CodeRayHtmlEncoder do
   it "emits instance method links" do
     tokens = [ [
                   "m!", :ident,
-                  {:method_call=>{:name=>"m!", :receiver=>["A", :instance]} }
+                  {:method_call=>{:name=>"m!", :receiver=>:instance, :scope => ["A"]} }
              ] ]
     encoder.encode_tokens(tokens).should include("/constants/A/instance_methods/m%21")
   end

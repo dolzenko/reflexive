@@ -10,6 +10,16 @@
 </head>
 <body>
 
+<% if Reflexive.class_reloading_active? %>
+  <div style="background-color: #ffc0cb; border: 1px solid gray; padding: 1em 1em; width: 500px">
+    Warning! You're running Reflexive with <code>config.cache_classes = false</code> <br/>
+    Rails setting (which is the default for running server in development environment).<br/>
+    Currently Reflexive isn't compatible with this setting and you may want to<br/>
+    either set <code>config.cache_classes = true</code> in your environment configuration<br/>
+    file or run the server in production mode with <br/><code>rails s --environment=production</code>
+  </div>
+<% end %>
+
 <div class="dashboard-link">
   <%= link_to("Reflexive Dashboard", dashboard_path) unless request.path == dashboard_path %>
 </div>
