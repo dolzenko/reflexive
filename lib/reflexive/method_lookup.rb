@@ -1,3 +1,5 @@
+require "reflexive/constantize"
+
 module Reflexive
   class MethodLookup
     def initialize(options)
@@ -22,18 +24,18 @@ module Reflexive
     def lookup
       begin
         defined_method_lookup
-  #        if core_klass.send(methods_getter, false).include?(@name)
-  #          @documentations = [[core_klass, @level, @name]]
-  #        elsif core_klass.send(reverse_methods_getter, false).include?(@name) # that's mostly guessing from now on
-  #          @documentations = [[core_klass, reverse_level, @name]]
-  #        end
-  #        if core_klass.instance_methods.include?(@name)
-  #          [[core_klass, :instance, @name]]
-  #        elsif core_klass.methods.include?(@name)
-      rescue NameError
+      rescue NameError => e
+        # don't swallow NameError if it's not related to the method we're looking for
+        raise unless e.message.include?(@name.to_s)
         heuristic_lookup
+        last_resort_lookup unless lookup_succeed?
       end
       @lookup_done = true
+    end
+
+    def lookup_succeed?
+      @definitions && @definitions.size > 0 ||
+              @documentations && @documentations.size > 0
     end
 
     def defined_method_lookup
@@ -41,7 +43,7 @@ module Reflexive
       if unbound_method.source_location
         @definitions = [[@klass, @level, @name]]
       elsif @klass.instance_of?(Class) && @level == :class && @name == :new &&
-              @klass.instance_method(:initialize).source_location
+              (@klass.instance_method(:initialize).source_location rescue false)
         @definitions = [[@klass, :instance, :initialize]]
       elsif core_klass = unbound_method.owner
         if core_klass == Kernel
@@ -57,6 +59,17 @@ module Reflexive
             @documentations = [[Class, :class, @name]]
           else
             @documentations = [[Class, :instance, @name]]
+          end
+        else
+          if @level == :class
+            if core_klass == @klass
+              @documentations = [[core_klass, :class, @name]]
+            elsif core_klass.to_s =~ /^#<Class:(.+)>$/
+              # get class from singleton class
+             @documentations = [[Reflexive.constantize($1), :class, @name]]
+            end
+          else
+            @documentations = [[core_klass, @level, @name]]
           end
         end
       end
@@ -74,9 +87,8 @@ module Reflexive
         end
 
         potential_receivers.uniq.each do |receiver|
-          @definitions ||= []
           # TODO heuristic lookup shouldn't assume that found method is not core method
-          @definitions << [receiver, :instance, @name]
+          (@definitions ||= []) << [receiver, :instance, @name]
         end
 
         potential_class_receivers = included_by_singleton_classes.select do |included_by_singleton_class|
@@ -84,8 +96,7 @@ module Reflexive
         end
 
         potential_class_receivers.uniq.each do |class_receiver|
-          @definitions ||= []
-          @definitions << [class_receiver, :class, @name]
+          (@definitions ||= []) << [class_receiver, :class, @name]
         end
       elsif @klass.instance_of?(Class)
         # both instance and class methods are inherited by classes
@@ -95,8 +106,24 @@ module Reflexive
         end
 
         potential_receivers.uniq.each do |receiver|
-          @definitions ||= []
-          @definitions << [receiver, @level, @name]
+
+          (@definitions ||= []) << [receiver, @level, @name]
+        end
+      end
+    end
+
+    def last_resort_lookup
+      seen = []
+      [Module, Class].each do |module_or_class|
+        ObjectSpace.each_object(module_or_class) do |m|
+          next if seen.include?(m)
+          if all_instance_methods(m).include?(@name)
+            (@definitions ||= []) << [m, :instance, @name]
+          end
+          if all_class_methods(m).include?(@name)
+            (@definitions ||= []) << [m, :class, @name]
+          end
+          seen << m
         end
       end
     end

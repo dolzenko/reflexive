@@ -45,7 +45,7 @@ module Reflexive
       end
     end
 
-    subclass
+    subclass.uniq
   end
 end
 

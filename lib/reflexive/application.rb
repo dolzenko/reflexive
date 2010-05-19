@@ -90,20 +90,24 @@ module Reflexive
       end
     end
 
-    get %r</reflexive/constants/([^/&#]+)/class_methods/([^/&#]+)/definition> do |klass, method|
+    def definition_action(klass, level, name)
       find_klass(klass)
-      @method_name = method
-      @path, @line = @klass.method(@method_name).source_location
-      @source = highlight_file(@path, :highlight_lines => [@line])
-      erb :methods_definition
+      @method_name = name
+      @path, @line = @klass.send(level == :class ? :method : :instance_method, @method_name).source_location
+      if @path.include?("(eval)")
+        e "#{ name } #{ level } method was generated using `eval' function and can't be browsed"
+      else
+        @source = highlight_file(@path, :highlight_lines => [@line])
+        erb :methods_definition
+      end
+    end
+
+    get %r</reflexive/constants/([^/&#]+)/class_methods/([^/&#]+)/definition> do |klass, method|
+      definition_action(klass, :class, method)
     end
 
     get %r</reflexive/constants/([^/&#]+)/instance_methods/([^/&#]+)/definition> do |klass, method|
-      find_klass(klass)
-      @method_name = method
-      @path, @line = @klass.instance_method(@method_name).source_location
-      @source = highlight_file(@path, :highlight_lines => [@line])
-      erb :methods_definition
+      definition_action(klass, :instance, method)
     end
 
     get %r</reflexive/constants/([^/&#]+)/instance_methods/([^/&#]+)/apidock> do |klass, method|

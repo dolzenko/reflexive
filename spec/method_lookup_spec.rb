@@ -166,6 +166,20 @@ describe Reflexive::MethodLookup do
 #      lookup_documentations(TestClass, :instance, :require).should ==
 #              [[Kernel, :instance, :require]]
     end
+
+    class InheritedFromDir < Dir
+    end
+
+    it "doesn't handle normal library classes in a specific way" do
+      lookup_documentations(File, :class, :expand_path).should ==
+              [[File, :class, :expand_path]]
+      lookup_documentations(Dir, :instance, :path).should ==
+              [[Dir, :instance, :path]]
+      lookup_documentations(InheritedFromDir, :instance, :path).should ==
+              [[Dir, :instance, :path]]
+      lookup_documentations(InheritedFromDir, :class, :entries).should ==
+              [[Dir, :class, :entries]]
+    end
   end
 
   describe "heuristic lookup" do
@@ -312,6 +326,21 @@ describe Reflexive::MethodLookup do
       it "finds inherited_class_class_meth" do
         lookup_definitions(HeuristicLookupBaseClassClassMethods, :class, :inherited_class_class_meth).should ==
                 [[HeuristicLookupInheritedClassClassMethods, :class, :inherited_class_class_meth]]
+      end
+    end
+
+    describe "last resort lookup" do
+      module LastResortTestModule
+      end
+
+      class LastResortTestClass
+        def some_really_uniq_instance_method
+        end
+      end
+
+      it "finds some_really_uniq_instance_method" do
+        lookup_definitions(LastResortTestModule, :instance, :some_really_uniq_instance_method).should ==
+                [[LastResortTestClass, :instance, :some_really_uniq_instance_method]]
       end
     end
   end
