@@ -146,4 +146,5 @@ Reflexive Dashboard should be available at
     > SINATRA_RELOADER=1 bundle exec rackup -p 4567 -s thin # run development server with class reloading
 
 
-MIT License. Copyright &copy; 2010 Evgeniy Dolzhenko. http://dolzhenko.org
+MIT License. Copyright &copy; 2010 Evgeniy Dolzhenko.
+[http://dolzhenko.org](http://dolzhenko.org)
