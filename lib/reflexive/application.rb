@@ -52,6 +52,12 @@ module Reflexive
       get("/reflexive/#{ path }", &block)
     end
 
+    before do
+      if request.host == "reflexive-demo.heroku.com"
+        response["Cache-Control"] = "max-age=10800, public" # 3 hours
+      end
+    end
+
     def e(message)
       @message = message
       erb :error
