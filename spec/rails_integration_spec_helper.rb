@@ -69,25 +69,35 @@ def build_and_install_test_gem
   end
 end
 
+SERVER_STARTUP_TIME = 20
 def spawn_server_and_wait_for_response(cmd)
   $server_pid = spawn(tmp_gemset_env, cmd)
-  puts "Spawned server with #{ $server_pid } PID"
-  tries = 0
-  print "Waiting for server to start..."
-  started = false
-  while (tries += 1) < 10 && !started
-  started = get("/").include?("Welcome aboard") rescue false
-  print "."
-  sleep 1
+  begin
+    trap("CLD") { raise "Failed to start server: server died prematurely" }
+    puts "Spawned server with #{ $server_pid } PID"
+    tries = 0
+    print "Waiting for server to start..."
+    started = false
+    while (tries += 1) < SERVER_STARTUP_TIME && !started
+      started = get("/").include?("Welcome aboard") rescue false
+      print "."
+      sleep 1
+    end
+    print "\n"
+    unless started
+      raise "Failed to start server: server didn't respond in #{ SERVER_STARTUP_TIME } seconds"
+    end
+  rescue Exception => e
+    raise e.exception("Failed to start server: #{ e.message }")
+  ensure
+    trap("CLD", nil)
   end
-  print "\n"
-  abort "Failed to start server" unless started
 end
 
 def terminate_server_blocking
   puts "Terminating server with #{ $server_pid } PID..."
   `kill -9 #{ $server_pid }`
-  Process::waitpid2($server_pid)
+  Process::waitpid2($server_pid) rescue nil
 end
 
 def get(path)

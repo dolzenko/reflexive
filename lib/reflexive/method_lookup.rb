@@ -19,6 +19,10 @@ module Reflexive
       @documentations
     end
 
+    def last_resort_lookup_used?
+      @last_resort_lookup_used
+    end
+
     private
 
     def lookup
@@ -113,6 +117,7 @@ module Reflexive
     end
 
     def last_resort_lookup
+      @last_resort_lookup_used = true
       seen = []
       [Module, Class].each do |module_or_class|
         ObjectSpace.each_object(module_or_class) do |m|

@@ -130,7 +130,8 @@ module Reflexive
         if definitions.size == 1
           redirect(new_method_definition_path(*definitions[0]) + "#highlighted")
         else
-          @definitions, @klass, @level, @name = definitions, klass, level, name
+          @definitions, @klass, @level, @name, @last_resort_lookup_used =
+                  definitions, klass, level, name, lookup.last_resort_lookup_used?
           erb :methods_choose
         end
       elsif documentations = lookup.documentations

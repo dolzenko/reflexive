@@ -10,6 +10,10 @@ shared_examples_for "fresh Rails app with Reflexive installed" do
     get("/").should include("Welcome aboard")
   end
 
+  it "doesn't respond on not existing path" do
+    proc { get("/not_exist") }.should raise_error
+  end
+
   it "responds for Reflexive paths" do
     constant_reflexion = get("/reflexive/constants/ActiveRecord::Base")
     constant_reflexion.should include("ActiveRecord")
@@ -112,11 +116,14 @@ describe "Integration with" do
                           class Application < Rails::Application
                             config.middleware.insert_after("Rack::Lock", "Reflexive::Application")
           RUBY
+
+          patch_app_file("Gemfile", /\z/, "\ngem 'reflexive'")
         end
 
         it "properly" do
           Dir.chdir($app_dir) do
             IO.read("config/application.rb").should include("Reflexive")
+            IO.read("Gemfile").should include("reflexive")
           end
         end
 

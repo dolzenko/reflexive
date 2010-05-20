@@ -3,6 +3,14 @@
   <code><%= @klass %></code> can dispatch to following methods 
 </div>
 
+<% if @last_resort_lookup_used %>
+  <div>
+    Note: the list of methods below was generated using last resort lookup
+    algorithm, i.e. by just looking for named method in any class/module
+    currently loaded. 
+  </div>
+<% end %>
+
 <div>
   <% links = @definitions.
           sort_by { |klass, _, _| klass.to_s }.
