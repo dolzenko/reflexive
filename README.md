@@ -15,8 +15,9 @@ or YARD.
 
 Reflexive is a Sinatra app and can be used stand-alone or mounted as Rack app
 from your Rails application. Reflexive is based on standard 1.9.2 Ruby library
-utilizing `UnboundMethod`, `methods/instance_methods` for reflection and
-Ripper parser for code navigation.
+utilizing `Method/UnboundMethod` classes, `methods/instance_methods` methods for reflection and
+Ripper parser for code navigation. Checkout [Reflexive: Live Class And Source Code Browser](http://dolzhenko.org/blog/?p=150)
+blog post for longer introduction.
 
 
 ### Features
@@ -54,9 +55,12 @@ Check out sample output for
 [rubygems.rb](http://reflexive-demo.heroku.com/reflexive/files/usr/ruby1.9.1/lib/ruby/site_ruby/1.9.1/rubygems.rb) 
 files.
 
-Clicking constants will try to open them in Class Browser, method
+Features include: clicking constants will try to open them in Class Browser, method
 calls with constant receiver or without explicit receiver will be resolved
 according to Method Lookup section and open the target method in Source Browser.
+Clicking `blabla` in `require "blabla"` will take you to the `blabla.rb`, and
+clicking local variable will highlight the place where the variable was introduced
+with acid pink (ouch!) background.
 
 #### Method Call Lookup
 
