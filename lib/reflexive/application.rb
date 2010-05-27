@@ -13,6 +13,7 @@ require "reflexive/constantize"
 require "reflexive/descendants"
 require "reflexive/methods"
 require "reflexive/method_lookup"
+require "reflexive/core_ext/reflexive_url"
 
 if ENV["SINATRA_RELOADER"]
   require "rails/all"
@@ -42,6 +43,10 @@ module Reflexive
       def root
         require "pathname"
         Pathname("../../../").expand_path(__FILE__)
+      end
+
+      def default_url_prefix
+        "http://localhost:3000"
       end
     end
 

@@ -32,6 +32,7 @@ module Reflexive
     def new_method_path(constant, level, method_name)
       "/reflexive/constants/#{ constant }/#{ level }_methods/#{ CGI.escape(method_name.to_s) }"
     end
+    module_function :new_method_path
 
     def method_path(constant, method_name)
       "/reflexive/constants/#{ constant }/methods/#{ CGI.escape(method_name.to_s) }"
@@ -77,6 +78,7 @@ module Reflexive
     def constant_path(constant)
       "/reflexive/constants/#{ constant }"
     end
+    module_function :constant_path
 
     def apidock_path(constant, level, method_name)
       path = "http://apidock.com/ruby/#{ constant }/#{ CGI.escape(method_name.to_s) }"

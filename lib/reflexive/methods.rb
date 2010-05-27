@@ -85,12 +85,12 @@ module Reflexive
       ancestors
     end
 
-    # singleton ancestors with ancestor introduced
+    # singleton ancestors which ancestor introduced
     def singleton_ancestors(ancestor)
       @singleton_ancestors ||= all_singleton_ancestors
       @singleton_ancestors[ancestor]
     end
-
+ 
     def all_singleton_ancestors
       all = {}
       seen = []
